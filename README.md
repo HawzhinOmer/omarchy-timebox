@@ -108,7 +108,8 @@ rather than overwriting it.
 ## License
 
 MIT. The bundled handwriting font, [Caveat](https://github.com/googlefonts/caveat), is licensed
-under the SIL Open Font License 1.1 (see `fonts/OFL.txt`).
+under the SIL Open Font License 1.1 (see `fonts/OFL.txt`). The web version also bundles
+[Amiri](https://github.com/aliftype/amiri) for Kurdish and Arabic text (SIL OFL 1.1, `docs/fonts/OFL-Amiri.txt`).
 
 ---
 
