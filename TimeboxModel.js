@@ -1,7 +1,7 @@
 .pragma library
 
-// Schedule covers 5 AM through the 11 PM row, in half-hour slots, like the paper planner.
-var START_HOUR = 5
+// Schedule covers 7 AM through the 11 PM row, in half-hour slots.
+var START_HOUR = 7
 var END_HOUR = 23
 var ROWS = END_HOUR - START_HOUR + 1
 var SLOTS = ROWS * 2
@@ -25,7 +25,7 @@ function emptyDay() {
   for (var i = 0; i < SLOTS; i++) slots.push("")
   var priorities = []
   for (var p = 0; p < PRIORITIES; p++) priorities.push({ text: "", done: false })
-  return { slots: slots, priorities: priorities, brainDump: "" }
+  return { slots: slots, priorities: priorities, brainDump: "", otherSlots: {} }
 }
 
 // Returns null when the file has content that isn't a valid day, so callers
@@ -42,6 +42,13 @@ function parseDay(raw) {
       var v = data.slots[slotKey(i)]
       if (typeof v === "string") day.slots[i] = v
     }
+    // Entries outside the visible hours (e.g. saved when the day started
+    // earlier) are kept as-is so saving never drops them.
+    var shown = {}
+    for (var k = 0; k < SLOTS; k++) shown[slotKey(k)] = true
+    for (var key in data.slots) {
+      if (!shown[key]) day.otherSlots[key] = data.slots[key]
+    }
   }
   if (Array.isArray(data.priorities)) {
     for (var p = 0; p < PRIORITIES && p < data.priorities.length; p++) {
@@ -55,6 +62,8 @@ function parseDay(raw) {
 
 function serializeDay(dateKey, day) {
   var slots = {}
+  var other = day.otherSlots || {}
+  for (var key in other) slots[key] = other[key]
   for (var i = 0; i < SLOTS; i++) {
     if (day.slots[i]) slots[slotKey(i)] = day.slots[i]
   }

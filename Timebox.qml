@@ -23,6 +23,7 @@ Item {
   property var slots: Model.emptyDay().slots
   property var priorities: Model.emptyDay().priorities
   property string brainDump: ""
+  property var otherSlots: ({})
   property bool loading: false
   property int revision: 0
   property bool fileExists: false
@@ -109,6 +110,7 @@ Item {
     root.slots = d.slots
     root.priorities = d.priorities
     root.brainDump = d.brainDump
+    root.otherSlots = d.otherSlots
     root.revision++
     root.loading = false
   }
@@ -125,7 +127,7 @@ Item {
 
   function save() {
     if (root.locked) return
-    var d = { slots: root.slots, priorities: root.priorities, brainDump: root.brainDump }
+    var d = { slots: root.slots, priorities: root.priorities, brainDump: root.brainDump, otherSlots: root.otherSlots }
     var empty = !root.brainDump && root.slots.every(function(s) { return !s })
       && root.priorities.every(function(p) { return !p.text })
     if (empty && !root.fileExists) return
@@ -284,32 +286,34 @@ Item {
         readonly property int labelGap: Style.space(10)
         readonly property int sectionGap: Style.space(26)
 
-        // ================= Left column =================
+        // ================= Header =================
         Item {
-          id: leftCol
+          id: topBar
           anchors.left: parent.left
+          anchors.right: parent.right
           anchors.top: parent.top
-          anchors.bottom: footer.top
-          width: content.leftWidth
+          height: Style.space(60)
 
           Row {
             id: header
-            spacing: Style.space(18)
+            anchors.left: parent.left
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.space(16)
 
             Rectangle {
-              width: Style.space(112)
+              width: Style.space(60)
               height: width
               color: root.foreground
 
               Column {
                 anchors.centerIn: parent
-                spacing: Style.space(2)
+                spacing: 0
                 Text {
                   anchors.horizontalCenter: parent.horizontalCenter
                   text: Qt.formatDate(root.day, "d")
                   color: root.background
                   font.family: root.fontFamily
-                  font.pixelSize: Style.font.displayLarge * 1.6
+                  font.pixelSize: Style.font.displayLarge
                   font.bold: true
                 }
                 Text {
@@ -317,7 +321,7 @@ Item {
                   text: Qt.formatDate(root.day, "MMM").toUpperCase()
                   color: root.background
                   font.family: root.fontFamily
-                  font.pixelSize: Style.font.title
+                  font.pixelSize: Style.font.caption
                   font.bold: true
                   font.letterSpacing: Style.space(2)
                 }
@@ -326,20 +330,145 @@ Item {
 
             Text {
               anchors.verticalCenter: parent.verticalCenter
-              text: "Daily\nTimebox\nPlanner"
+              text: "Daily Timebox Planner"
               color: root.foreground
               font.family: root.fontFamily
-              font.pixelSize: Style.font.displayLarge
+              font.pixelSize: Style.font.display
               font.bold: true
-              lineHeight: 0.95
             }
           }
+
+          // ---- Date line ----
+          Item {
+            id: dateLine
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            width: rightCol.width
+            height: Style.space(44)
+
+            Text {
+              id: dateLabel
+              anchors.left: parent.left
+              anchors.bottom: parent.bottom
+              anchors.bottomMargin: Style.space(6)
+              text: "Date:"
+              color: root.foreground
+              font.family: root.fontFamily
+              font.pixelSize: Style.font.title
+              font.bold: true
+            }
+
+            Text {
+              id: dateText
+              anchors.left: dateLabel.right
+              anchors.leftMargin: Style.space(14)
+              anchors.right: navRow.left
+              anchors.rightMargin: Style.space(10)
+              anchors.bottom: parent.bottom
+              anchors.bottomMargin: Style.space(4)
+              horizontalAlignment: Text.AlignHCenter
+              text: Qt.formatDate(root.day, "dddd, MMMM d, yyyy")
+              color: root.foreground
+              font.family: root.handFamily
+              font.pixelSize: Style.font.display * (1 + (root.handScale - 1) / 2)
+              fontSizeMode: Text.HorizontalFit
+              minimumPixelSize: Style.font.heading
+              elide: Text.ElideRight
+            }
+
+            Rectangle {
+              anchors.left: dateText.left
+              anchors.right: dateText.right
+              anchors.bottom: parent.bottom
+              height: 1
+              color: root.foreground
+            }
+
+            Row {
+              id: navRow
+              anchors.right: parent.right
+              anchors.bottom: parent.bottom
+              anchors.bottomMargin: Style.space(4)
+              spacing: Style.space(4)
+
+              Rectangle {
+                width: bellText.implicitWidth + Style.space(16)
+                height: Style.space(28)
+                radius: root.cornerRadius
+                color: bellMouse.containsMouse ? Util.alpha(root.foreground, 0.1) : "transparent"
+                border.color: root.line
+                border.width: 1
+                Text {
+                  id: bellText
+                  anchors.centerIn: parent
+                  text: (root.reminderMode === "off" ? "󰂛  " : "󰂚  ") + Model.reminderLabel(root.reminderMode)
+                  color: root.reminderMode === "off" ? root.muted : root.foreground
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.body
+                }
+                MouseArea {
+                  id: bellMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: { root.cycleReminders(); gridKeys.forceActiveFocus() }
+                }
+              }
+
+              Repeater {
+                model: [
+                  { label: "‹", delta: -1 },
+                  { label: "Today", delta: 0 },
+                  { label: "›", delta: 1 }
+                ]
+                Rectangle {
+                  required property var modelData
+                  visible: modelData.delta !== 0 || !root.isToday
+                  width: navText.implicitWidth + Style.space(16)
+                  height: Style.space(28)
+                  radius: root.cornerRadius
+                  color: navMouse.containsMouse ? Util.alpha(root.foreground, 0.1) : "transparent"
+                  border.color: root.line
+                  border.width: 1
+                  Text {
+                    id: navText
+                    anchors.centerIn: parent
+                    text: parent.modelData.label
+                    color: root.foreground
+                    font.family: root.fontFamily
+                    font.pixelSize: Style.font.title
+                  }
+                  MouseArea {
+                    id: navMouse
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                    onClicked: {
+                      if (parent.modelData.delta === 0) root.setDay(new Date())
+                      else root.shiftDay(parent.modelData.delta)
+                      gridKeys.forceActiveFocus()
+                    }
+                  }
+                }
+              }
+            }
+          }
+
+        }
+
+        // ================= Left column =================
+        Item {
+          id: leftCol
+          anchors.left: parent.left
+          anchors.top: topBar.bottom
+          anchors.topMargin: content.sectionGap
+          anchors.bottom: footer.top
+          width: content.leftWidth
 
           // ---- Top priorities ----
           Text {
             id: prioritiesLabel
-            anchors.top: header.bottom
-            anchors.topMargin: content.sectionGap
+            anchors.top: parent.top
             text: "Top Priorities"
             color: root.foreground
             font.family: root.fontFamily
@@ -528,128 +657,14 @@ Item {
           anchors.left: leftCol.right
           anchors.leftMargin: content.gutter
           anchors.right: parent.right
-          anchors.top: parent.top
+          anchors.top: topBar.bottom
+          anchors.topMargin: content.sectionGap
           anchors.bottom: footer.top
-
-          // ---- Date line ----
-          Item {
-            id: dateLine
-            width: parent.width
-            height: Style.space(44)
-
-            Text {
-              id: dateLabel
-              anchors.left: parent.left
-              anchors.bottom: parent.bottom
-              anchors.bottomMargin: Style.space(6)
-              text: "Date:"
-              color: root.foreground
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.title
-              font.bold: true
-            }
-
-            Text {
-              id: dateText
-              anchors.left: dateLabel.right
-              anchors.leftMargin: Style.space(14)
-              anchors.right: navRow.left
-              anchors.rightMargin: Style.space(10)
-              anchors.bottom: parent.bottom
-              anchors.bottomMargin: Style.space(4)
-              horizontalAlignment: Text.AlignHCenter
-              text: Qt.formatDate(root.day, "dddd, MMMM d, yyyy")
-              color: root.foreground
-              font.family: root.handFamily
-              font.pixelSize: Style.font.display * (1 + (root.handScale - 1) / 2)
-              fontSizeMode: Text.HorizontalFit
-              minimumPixelSize: Style.font.heading
-              elide: Text.ElideRight
-            }
-
-            Rectangle {
-              anchors.left: dateText.left
-              anchors.right: dateText.right
-              anchors.bottom: parent.bottom
-              height: 1
-              color: root.foreground
-            }
-
-            Row {
-              id: navRow
-              anchors.right: parent.right
-              anchors.bottom: parent.bottom
-              anchors.bottomMargin: Style.space(4)
-              spacing: Style.space(4)
-
-              Rectangle {
-                width: bellText.implicitWidth + Style.space(16)
-                height: Style.space(28)
-                radius: root.cornerRadius
-                color: bellMouse.containsMouse ? Util.alpha(root.foreground, 0.1) : "transparent"
-                border.color: root.line
-                border.width: 1
-                Text {
-                  id: bellText
-                  anchors.centerIn: parent
-                  text: (root.reminderMode === "off" ? "󰂛  " : "󰂚  ") + Model.reminderLabel(root.reminderMode)
-                  color: root.reminderMode === "off" ? root.muted : root.foreground
-                  font.family: root.fontFamily
-                  font.pixelSize: Style.font.body
-                }
-                MouseArea {
-                  id: bellMouse
-                  anchors.fill: parent
-                  hoverEnabled: true
-                  cursorShape: Qt.PointingHandCursor
-                  onClicked: { root.cycleReminders(); gridKeys.forceActiveFocus() }
-                }
-              }
-
-              Repeater {
-                model: [
-                  { label: "‹", delta: -1 },
-                  { label: "Today", delta: 0 },
-                  { label: "›", delta: 1 }
-                ]
-                Rectangle {
-                  required property var modelData
-                  visible: modelData.delta !== 0 || !root.isToday
-                  width: navText.implicitWidth + Style.space(16)
-                  height: Style.space(28)
-                  radius: root.cornerRadius
-                  color: navMouse.containsMouse ? Util.alpha(root.foreground, 0.1) : "transparent"
-                  border.color: root.line
-                  border.width: 1
-                  Text {
-                    id: navText
-                    anchors.centerIn: parent
-                    text: parent.modelData.label
-                    color: root.foreground
-                    font.family: root.fontFamily
-                    font.pixelSize: Style.font.title
-                  }
-                  MouseArea {
-                    id: navMouse
-                    anchors.fill: parent
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: {
-                      if (parent.modelData.delta === 0) root.setDay(new Date())
-                      else root.shiftDay(parent.modelData.delta)
-                      gridKeys.forceActiveFocus()
-                    }
-                  }
-                }
-              }
-            }
-          }
 
           // ---- :00 / :30 header ----
           Item {
             id: colHeader
-            anchors.top: dateLine.bottom
-            anchors.topMargin: Style.space(16)
+            anchors.top: parent.top
             width: parent.width
             height: Style.font.title + Style.space(12)
 

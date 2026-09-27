@@ -1,7 +1,7 @@
 # Timebox Planner for Omarchy
 
 A daily timebox planner for the [Omarchy](https://omarchy.org) shell, modeled on the paper
-"Daily Timebox Planner": top priorities, a brain dump, and a half-hour schedule from 5 AM to 11 PM.
+"Daily Timebox Planner": top priorities, a brain dump, and a half-hour schedule from 7 AM to midnight.
 It follows your current Omarchy theme, and everything you write appears in a handwriting font, like pen on the paper original.
 
 ![Timebox Planner](preview.png)
