@@ -50,14 +50,8 @@ BarWidget {
     return lines.join("\n")
   }
 
-  function slotMinutes(i) {
-    return Model.START_HOUR * 60 + i * 30
-  }
-
-  function slotTime(i) {
-    var m = slotMinutes(i)
-    return Qt.formatTime(new Date(2000, 0, 1, Math.floor(m / 60), m % 60), "h:mm AP")
-  }
+  function slotMinutes(i) { return Model.slotMinutes(i) }
+  function slotTime(i) { return Model.slotTime(i) }
 
   function duration(minutes) {
     if (minutes < 60) return minutes + "m"

@@ -84,3 +84,23 @@ function computeRuns(slots) {
   }
   return { runOf: runOf, runs: runs }
 }
+
+function slotMinutes(i) {
+  return START_HOUR * 60 + i * 30
+}
+
+// "9:30 AM" style, matching the bar clock.
+function slotTime(i) {
+  var m = slotMinutes(i)
+  var h = Math.floor(m / 60) % 24
+  return (h % 12 === 0 ? 12 : h % 12) + ":" + pad(m % 60) + (h < 12 ? " AM" : " PM")
+}
+
+// The block (run) that starts exactly at the given minute of the day, if any.
+function runStartingAt(slots, minuteOfDay) {
+  var runs = computeRuns(slots).runs
+  for (var r = 0; r < runs.length; r++) {
+    if (slotMinutes(runs[r].start) === minuteOfDay) return runs[r]
+  }
+  return null
+}

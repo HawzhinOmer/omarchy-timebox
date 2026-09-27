@@ -10,6 +10,8 @@ It follows your current Omarchy theme.
 - **Brain Dump**: free-form notes on a dotted pad.
 - **Schedule**: `:00` / `:30` slots. Consecutive slots with the same text are drawn as one boxed timebox.
 - A red line marks the current time on today's page.
+- **Reminders**: a desktop notification when each block starts (e.g. `Deep work · 9:00 AM – 10:30 AM`).
+  Click it to open the planner. Check the next one with `omarchy-shell hawzhin.timebox.reminders next`.
 - **Bar widget**: shows the block you're in and how long is left (`Deep work · 56m`),
   or the next block when nothing is scheduled right now. Hover for details; click to open the planner.
 
