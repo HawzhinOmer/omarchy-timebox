@@ -232,6 +232,55 @@ Item {
     gridKeys.forceActiveFocus()
   }
 
+  // ---- copy / cut / paste for schedule slots (like a spreadsheet) ----
+  // Colors travel with a copy made here; text from elsewhere pastes plain.
+  property var copied: null
+
+  function copySlots() {
+    var texts = [], colors = []
+    for (var i = root.selStart; i <= root.selEnd; i++) {
+      texts.push(root.slots[i])
+      colors.push(root.slotColors[Model.slotKey(i)] || "")
+    }
+    Quickshell.clipboardText = texts.join("\n")
+    root.copied = { text: texts.join("\n"), colors: colors }
+  }
+
+  function cutSlots() {
+    root.copySlots()
+    root.fillSelection("")
+    var next = Object.assign({}, root.slotColors)
+    for (var i = root.selStart; i <= root.selEnd; i++) delete next[Model.slotKey(i)]
+    root.slotColors = next
+  }
+
+  function pasteSlots() {
+    if (root.locked) return
+    var text = String(Quickshell.clipboardText || "").replace(/\r/g, "")
+    if (!text) return
+    var lines = text.replace(/\n$/, "").split("\n")
+    var colors = root.copied && root.copied.text === text ? root.copied.colors : null
+    var nextSlots = root.slots.slice()
+    var nextColors = Object.assign({}, root.slotColors)
+    function put(i, j) {
+      nextSlots[i] = lines[j].trim()
+      var key = Model.slotKey(i)
+      if (colors && colors[j]) nextColors[key] = colors[j]
+      else if (colors) delete nextColors[key]
+    }
+    if (lines.length === 1) {
+      for (var i = root.selStart; i <= root.selEnd; i++) put(i, 0)
+    } else {
+      var end = Math.min(Model.SLOTS - 1, root.selStart + lines.length - 1)
+      for (var k = root.selStart; k <= end; k++) put(k, k - root.selStart)
+      root.anchorSlot = root.selStart
+      root.cursorSlot = end
+    }
+    root.slots = nextSlots
+    root.slotColors = nextColors
+    root.scheduleSave()
+  }
+
   function commitAndMoveDown() {
     var single = root.selStart === root.selEnd
     root.commitEdit()
@@ -915,7 +964,11 @@ Item {
               Keys.onPressed: function(event) {
                 var shift = (event.modifiers & Qt.ShiftModifier) !== 0
                 var k = event.key
-                if (k === Qt.Key_Escape) root.dismiss()
+                var ctrl = (event.modifiers & Qt.ControlModifier) !== 0
+                if (ctrl && k === Qt.Key_C) root.copySlots()
+                else if (ctrl && k === Qt.Key_X) root.cutSlots()
+                else if (ctrl && k === Qt.Key_V) root.pasteSlots()
+                else if (k === Qt.Key_Escape) root.dismiss()
                 else if (k === Qt.Key_Up) root.moveCursor(-2, shift)
                 else if (k === Qt.Key_Down) root.moveCursor(2, shift)
                 else if (k === Qt.Key_Left) root.moveCursor(-1, shift)
@@ -1256,7 +1309,7 @@ Item {
           verticalAlignment: Text.AlignBottom
           text: root.locked
             ? "⚠  " + root.loadError + ". Read-only so it isn't overwritten; fix the file, then reopen."
-            : "Type to fill  •  Tab next  •  Enter save + down  •  A text color  •  Del clear  •  PgUp/PgDn day  •  Esc close"
+            : "Type to fill  •  Tab next  •  Enter save + down  •  Ctrl C/X/V  •  A text color  •  Del clear  •  PgUp/PgDn day  •  Esc close"
           color: root.locked ? root.urgentColor : root.muted
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall

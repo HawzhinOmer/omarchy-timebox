@@ -70,6 +70,7 @@ Omarchy with the Quickshell-based shell (Omarchy 4 / Quattro). No other dependen
 | Enter while typing | Save and move down one row, like a spreadsheet |
 | Del / Backspace | Clear the selected slots |
 | Arrows, Shift+arrows | Move / extend the selection |
+| Ctrl+C / Ctrl+X / Ctrl+V | Copy / cut / paste slots (several lines paste into slots in order) |
 | Tab / Shift+Tab | Next / previous slot (saves what you're typing first) |
 | PgUp / PgDn | Previous / next day |
 | Home | Jump to today |
