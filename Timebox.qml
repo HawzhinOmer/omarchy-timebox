@@ -855,23 +855,6 @@ Item {
               }
             }
 
-            // Current-time marker: a short tick in the hour column, so it
-            // shows where "now" is without running through any tasks.
-            Item {
-              visible: root.isToday && root.now.getHours() >= Model.START_HOUR
-              readonly property real hours: root.now.getHours() - Model.START_HOUR + root.now.getMinutes() / 60
-              x: grid.labelWidth - width
-              y: Math.min(grid.height, hours * grid.rowHeight) - 1
-              width: Style.space(12)
-              z: 4
-              Rectangle { width: parent.width; height: 2; color: root.urgentColor }
-              Rectangle {
-                width: Style.space(8); height: width; radius: width / 2
-                x: parent.width - width / 2; y: 1 - height / 2
-                color: root.urgentColor
-              }
-            }
-
             // Cursor outline
             Rectangle {
               visible: gridKeys.activeFocus && !root.editing

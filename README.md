@@ -9,7 +9,7 @@ It follows your current Omarchy theme, and everything you write appears in a han
 - **Top Priorities**: three items; click the circle to mark one done.
 - **Brain Dump**: free-form notes on a dotted pad.
 - **Schedule**: `:00` / `:30` slots. Consecutive slots with the same text are drawn as one boxed timebox.
-- A small red marker beside the hour column shows the current time on today's page.
+- On today's page, the current hour's number is highlighted.
 - **Reminders**: a desktop notification when each block starts (e.g. `Deep work · 9:00 AM – 10:30 AM`).
   Click it to open the planner. The bell button next to the date switches between *At start*,
   *5 min before*, *5 min before + start*, and *Off*. Check the next one with `omarchy-shell hawzhin.timebox.reminders next`.
