@@ -90,7 +90,10 @@ BarWidget {
     path: root.dataDir + "/" + root.dateKey + ".json"
     watchChanges: true
     printErrors: false
-    onLoaded: root.slots = Model.parseDay(text()).slots
+    onLoaded: {
+      var day = Model.parseDay(text())
+      root.slots = day ? day.slots : Model.emptyDay().slots
+    }
     onLoadFailed: root.slots = Model.emptyDay().slots
     onFileChanged: reload()
   }

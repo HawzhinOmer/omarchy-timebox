@@ -28,11 +28,14 @@ function emptyDay() {
   return { slots: slots, priorities: priorities, brainDump: "" }
 }
 
+// Returns null when the file has content that isn't a valid day, so callers
+// can refuse to overwrite it instead of treating it as an empty day.
 function parseDay(raw) {
   var day = emptyDay()
+  if (!raw || !String(raw).trim()) return day
   var data = null
-  try { data = JSON.parse(raw || "{}") } catch (e) { data = null }
-  if (!data || typeof data !== "object") return day
+  try { data = JSON.parse(raw) } catch (e) { return null }
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null
 
   if (data.slots && typeof data.slots === "object") {
     for (var i = 0; i < SLOTS; i++) {

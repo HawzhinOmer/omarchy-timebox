@@ -27,6 +27,10 @@ Item {
   property bool loading: false
   property int revision: 0
   property bool fileExists: false
+  // Set when today's file exists but can't be read or parsed. Editing is
+  // blocked so a save can never overwrite data we failed to load.
+  property string loadError: ""
+  readonly property bool locked: loadError !== ""
   readonly property var runInfo: Model.computeRuns(root.slots)
 
   // Schedule selection (slot indexes) and inline editor
@@ -93,6 +97,10 @@ Item {
 
   function applyData(raw) {
     var d = Model.parseDay(raw)
+    if (!d) {
+      root.loadError = root.dateKey + ".json isn't a valid planner file"
+      d = Model.emptyDay()
+    }
     root.loading = true
     root.slots = d.slots
     root.priorities = d.priorities
@@ -102,7 +110,7 @@ Item {
   }
 
   function scheduleSave() {
-    if (!root.loading) saveTimer.restart()
+    if (!root.loading && !root.locked) saveTimer.restart()
   }
 
   function flush() {
@@ -112,6 +120,7 @@ Item {
   }
 
   function save() {
+    if (root.locked) return
     var d = { slots: root.slots, priorities: root.priorities, brainDump: root.brainDump }
     var empty = !root.brainDump && root.slots.every(function(s) { return !s })
       && root.priorities.every(function(p) { return !p.text })
@@ -121,6 +130,7 @@ Item {
   }
 
   function setPriority(i, patch) {
+    if (root.locked) return
     var next = root.priorities.slice()
     next[i] = Object.assign({}, next[i], patch)
     root.priorities = next
@@ -128,6 +138,7 @@ Item {
   }
 
   function fillSelection(text) {
+    if (root.locked) return
     var next = root.slots.slice()
     for (var i = root.selStart; i <= root.selEnd; i++) next[i] = text
     root.slots = next
@@ -149,6 +160,7 @@ Item {
   }
 
   function startEdit(initial) {
+    if (root.locked) return
     editor.text = initial
     root.editing = true
     editor.forceActiveFocus()
@@ -181,8 +193,12 @@ Item {
     atomicWrites: true
     blockWrites: true
     printErrors: false
-    onLoaded: { root.fileExists = true; root.applyData(text()) }
-    onLoadFailed: { root.fileExists = false; root.applyData("") }
+    onLoaded: { root.fileExists = true; root.loadError = ""; root.applyData(text()) }
+    onLoadFailed: function(error) {
+      root.fileExists = error !== FileViewError.FileNotFound
+      root.loadError = root.fileExists ? "Couldn't read " + root.dateKey + ".json" : ""
+      root.applyData("")
+    }
   }
 
   Timer {
@@ -207,6 +223,11 @@ Item {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
     exclusionMode: ExclusionMode.Ignore
+
+    Shortcut {
+      sequences: ["Escape"]
+      onActivated: root.editing ? root.cancelEdit() : root.dismiss()
+    }
 
     Rectangle { anchors.fill: parent; color: root.scrim }
 
@@ -363,9 +384,10 @@ Item {
                     font.strikeout: prow.item.done
                     selectionColor: root.selectionFill
                     selectByMouse: true
+                    readOnly: root.locked
                     clip: true
                     onTextChanged: if (!root.loading) root.setPriority(prow.index, { text: text })
-                    Keys.onEscapePressed: gridKeys.forceActiveFocus()
+                    Keys.onEscapePressed: root.dismiss()
                     Keys.onReturnPressed: root.focusPriority(prow.index + 1)
                     Keys.onTabPressed: root.focusPriority(prow.index + 1)
 
@@ -453,9 +475,10 @@ Item {
                 font.pixelSize: Style.font.title
                 selectionColor: root.selectionFill
                 selectByMouse: true
+                readOnly: root.locked
                 onCursorRectangleChanged: dumpFlick.ensureVisible(cursorRectangle)
-                onTextChanged: if (!root.loading) { root.brainDump = text; root.scheduleSave() }
-                Keys.onEscapePressed: gridKeys.forceActiveFocus()
+                onTextChanged: if (!root.loading && !root.locked) { root.brainDump = text; root.scheduleSave() }
+                Keys.onEscapePressed: root.dismiss()
 
                 Text {
                   visible: !dumpEdit.text && !dumpEdit.activeFocus
@@ -624,10 +647,8 @@ Item {
               Keys.onPressed: function(event) {
                 var shift = (event.modifiers & Qt.ShiftModifier) !== 0
                 var k = event.key
-                if (k === Qt.Key_Escape) {
-                  if (root.selStart !== root.selEnd) root.anchorSlot = root.cursorSlot
-                  else root.dismiss()
-                } else if (k === Qt.Key_Up) root.moveCursor(-2, shift)
+                if (k === Qt.Key_Escape) root.dismiss()
+                else if (k === Qt.Key_Up) root.moveCursor(-2, shift)
                 else if (k === Qt.Key_Down) root.moveCursor(2, shift)
                 else if (k === Qt.Key_Left) root.moveCursor(-1, shift)
                 else if (k === Qt.Key_Right) root.moveCursor(1, shift)
@@ -856,8 +877,10 @@ Item {
           anchors.horizontalCenter: parent.horizontalCenter
           height: content.footerHeight
           verticalAlignment: Text.AlignBottom
-          text: "Drag to select slots  •  type or Enter to fill  •  Del to clear  •  PgUp/PgDn change day  •  Home today  •  Esc close"
-          color: root.muted
+          text: root.locked
+            ? "⚠  " + root.loadError + ". Read-only so it isn't overwritten; fix the file, then reopen."
+            : "Drag to select slots  •  type or Enter to fill  •  Del to clear  •  PgUp/PgDn change day  •  Home today  •  Esc close"
+          color: root.locked ? root.urgentColor : root.muted
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall
           font.letterSpacing: Style.space(1)
