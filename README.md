@@ -7,10 +7,11 @@ It follows your current Omarchy theme, and everything you write appears in a han
 ![Timebox Planner](preview.png)
 
 - **Top Priorities**: three items; click the circle to mark one done.
-- **Brain Dump**: free-form notes on a dotted pad.
+- **Brain Dump**: free-form notes on a dotted pad, in two columns.
 - **Schedule**: `:00` / `:30` slots. Consecutive slots with the same text are drawn as one boxed timebox.
 - On today's page, the current hour's number is highlighted.
-- **Brain Dump**: two columns of notes side by side.
+- **Save image**: saves the day as a picture in `~/Pictures/timebox-<date>.png`; click the
+  notification to send it to your phone with LocalSend.
 - **Text color**: the **A** button colors what you've selected with your theme's colors (Default, Red, or Accent): highlighted
   words in the Brain Dump, the priority you're in, or the selected schedule slots.
 - **Colors**: every color comes from your Omarchy theme and changes with it. The round button picks
