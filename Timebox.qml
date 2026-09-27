@@ -496,63 +496,6 @@ Item {
                   onClicked: { root.paletteOpen = false; root.inkOpen = !root.inkOpen }
                 }
 
-                Rectangle {
-                  visible: root.inkOpen
-                  anchors.right: parent.right
-                  anchors.top: parent.bottom
-                  anchors.topMargin: Style.space(6)
-                  width: inkChoices.implicitWidth + Style.space(16)
-                  height: inkChoices.implicitHeight + Style.space(16)
-                  radius: root.cornerRadius
-                  color: root.background
-                  border.color: root.line
-                  border.width: 1
-
-                  Row {
-                    id: inkChoices
-                    anchors.centerIn: parent
-                    spacing: Style.space(6)
-                    Repeater {
-                      model: [
-                        { label: "Default", ink: "" },
-                        { label: "Red", ink: "red" },
-                        { label: "Accent", ink: root.settings.accent && root.settings.accent.charAt(0) !== "#" ? root.settings.accent : "accent" }
-                      ]
-                      Rectangle {
-                        required property var modelData
-                        width: inkLabel.implicitWidth + Style.space(34)
-                        height: Style.space(26)
-                        radius: root.cornerRadius
-                        color: chipMouse.containsMouse ? Util.alpha(root.foreground, 0.1) : "transparent"
-                        Rectangle {
-                          id: inkDot
-                          anchors.left: parent.left
-                          anchors.leftMargin: Style.space(8)
-                          anchors.verticalCenter: parent.verticalCenter
-                          width: Style.space(12); height: width; radius: width / 2
-                          color: root.tone(parent.modelData.ink)
-                        }
-                        Text {
-                          id: inkLabel
-                          anchors.left: inkDot.right
-                          anchors.leftMargin: Style.space(6)
-                          anchors.verticalCenter: parent.verticalCenter
-                          text: parent.modelData.label
-                          color: root.tone(parent.modelData.ink)
-                          font.family: root.fontFamily
-                          font.pixelSize: Style.font.body
-                        }
-                        MouseArea {
-                          id: chipMouse
-                          anchors.fill: parent
-                          hoverEnabled: true
-                          cursorShape: Qt.PointingHandCursor
-                          onClicked: root.applyInk(parent.modelData.ink)
-                        }
-                      }
-                    }
-                  }
-                }
               }
 
               Rectangle {
@@ -576,54 +519,6 @@ Item {
                   onClicked: { root.inkOpen = false; root.paletteOpen = !root.paletteOpen }
                 }
 
-                Rectangle {
-                  visible: root.paletteOpen
-                  anchors.right: parent.right
-                  anchors.top: parent.bottom
-                  anchors.topMargin: Style.space(6)
-                  width: swatches.implicitWidth + Style.space(16)
-                  height: swatches.implicitHeight + Style.space(16)
-                  radius: root.cornerRadius
-                  color: root.background
-                  border.color: root.line
-                  border.width: 1
-
-                  Row {
-                    id: swatches
-                    anchors.centerIn: parent
-                    spacing: Style.space(8)
-                    Repeater {
-                      model: root.palette
-                      Rectangle {
-                        required property var modelData
-                        readonly property color swatch: root.tone(modelData)
-                        readonly property bool current: (root.settings.accent && root.settings.accent.charAt(0) !== "#" ? root.settings.accent : "accent") === modelData
-                        width: Style.space(24); height: width; radius: width / 2
-                        color: swatch
-                        border.color: root.foreground
-                        border.width: current ? Math.max(2, Style.space(2)) : 0
-                        Text {
-                          anchors.centerIn: parent
-                          visible: parent.modelData === "accent"
-                          text: "T"
-                          color: root.background
-                          font.family: root.fontFamily
-                          font.pixelSize: Style.font.caption
-                          font.bold: true
-                        }
-                        MouseArea {
-                          anchors.fill: parent
-                          cursorShape: Qt.PointingHandCursor
-                          onClicked: {
-                            root.setSetting("accent", parent.modelData === "accent" ? "" : parent.modelData)
-                            root.paletteOpen = false
-                            gridKeys.forceActiveFocus()
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
               }
 
               Rectangle {
@@ -1230,11 +1125,133 @@ Item {
           }
         }
 
+        // ================= Popups =================
+        Rectangle {
+          visible: root.inkOpen
+          z: 20
+          // Lives at the content level (not inside the header row) so
+          // clicks on it are always delivered.
+          x: root.inkOpen ? inkButton.mapToItem(content, inkButton.width, 0).x - width : 0
+          y: root.inkOpen ? inkButton.mapToItem(content, 0, inkButton.height).y + Style.space(6) : 0
+          width: inkChoices.implicitWidth + Style.space(16)
+          height: inkChoices.implicitHeight + Style.space(16)
+          radius: root.cornerRadius
+          color: root.background
+          border.color: root.line
+          border.width: 1
+
+          Row {
+            id: inkChoices
+            anchors.centerIn: parent
+            spacing: Style.space(6)
+            Repeater {
+              model: [
+                { label: "Default", ink: "" },
+                { label: "Red", ink: "red" },
+                { label: "Accent", ink: root.settings.accent && root.settings.accent.charAt(0) !== "#" ? root.settings.accent : "accent" }
+              ]
+              Rectangle {
+                required property var modelData
+                width: inkLabel.implicitWidth + Style.space(34)
+                height: Style.space(26)
+                radius: root.cornerRadius
+                color: chipMouse.containsMouse ? Util.alpha(root.foreground, 0.1) : "transparent"
+                Rectangle {
+                  id: inkDot
+                  anchors.left: parent.left
+                  anchors.leftMargin: Style.space(8)
+                  anchors.verticalCenter: parent.verticalCenter
+                  width: Style.space(12); height: width; radius: width / 2
+                  color: root.tone(parent.modelData.ink)
+                }
+                Text {
+                  id: inkLabel
+                  anchors.left: inkDot.right
+                  anchors.leftMargin: Style.space(6)
+                  anchors.verticalCenter: parent.verticalCenter
+                  text: parent.modelData.label
+                  color: root.tone(parent.modelData.ink)
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.body
+                }
+                MouseArea {
+                  id: chipMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.applyInk(parent.modelData.ink)
+                }
+              }
+            }
+          }
+        }
+
+        Rectangle {
+          visible: root.paletteOpen
+          z: 20
+          // Lives at the content level (not inside the header row) so
+          // clicks on it are always delivered.
+          x: root.paletteOpen ? colorButton.mapToItem(content, colorButton.width, 0).x - width : 0
+          y: root.paletteOpen ? colorButton.mapToItem(content, 0, colorButton.height).y + Style.space(6) : 0
+          width: swatches.implicitWidth + Style.space(16)
+          height: swatches.implicitHeight + Style.space(16)
+          radius: root.cornerRadius
+          color: root.background
+          border.color: root.line
+          border.width: 1
+
+          Row {
+            id: swatches
+            anchors.centerIn: parent
+            spacing: Style.space(8)
+            Repeater {
+              model: root.palette
+              Rectangle {
+                required property var modelData
+                readonly property color swatch: root.tone(modelData)
+                readonly property bool current: (root.settings.accent && root.settings.accent.charAt(0) !== "#" ? root.settings.accent : "accent") === modelData
+                width: Style.space(24); height: width; radius: width / 2
+                color: swatch
+                border.color: root.foreground
+                border.width: current ? Math.max(2, Style.space(2)) : 0
+                Text {
+                  anchors.centerIn: parent
+                  visible: parent.modelData === "accent"
+                  text: "T"
+                  color: root.background
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                  font.bold: true
+                }
+                MouseArea {
+                  anchors.fill: parent
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: {
+                    root.setSetting("accent", parent.modelData === "accent" ? "" : parent.modelData)
+                    root.paletteOpen = false
+                    gridKeys.forceActiveFocus()
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        Text {
+          anchors.right: parent.right
+          anchors.bottom: parent.bottom
+          text: "Created by HawzhinOmer"
+          color: root.muted
+          opacity: 0.7
+          font.family: root.fontFamily
+          font.pixelSize: Style.font.caption
+        }
+
         // ================= Footer =================
         Text {
           id: footer
           anchors.bottom: parent.bottom
-          anchors.horizontalCenter: parent.horizontalCenter
+          anchors.left: parent.left
           height: content.footerHeight
           verticalAlignment: Text.AlignBottom
           text: root.locked
@@ -1262,8 +1279,14 @@ Item {
     if (root.locked) return
     var t = root.colorTarget
     if (t === "grid") {
+      // Color whole blocks: a block's text uses its first slot's color, so
+      // selecting any part of a block recolors all of it.
+      var from = root.selStart, to = root.selEnd
+      var runOf = root.runInfo.runOf, runs = root.runInfo.runs
+      if (runOf[from] >= 0) from = runs[runOf[from]].start
+      if (runOf[to] >= 0) to = runs[runOf[to]].start + runs[runOf[to]].len - 1
       var next = Object.assign({}, root.slotColors)
-      for (var i = root.selStart; i <= root.selEnd; i++) {
+      for (var i = from; i <= to; i++) {
         if (color) next[Model.slotKey(i)] = color
         else delete next[Model.slotKey(i)]
       }
@@ -1283,7 +1306,10 @@ Item {
     var plain = edit.getText(a, b).replace(/\u2029/g, "\n")
     edit.remove(a, b)
     edit.insert(a, '<span style="color:' + color + ';">' + Model.plainToHtml(plain) + '</span>')
-    edit.select(a, a + plain.length)
+    // Leave the cursor after the colored words instead of re-selecting
+    // them; the selection highlight would hide the new color.
+    edit.deselect()
+    edit.cursorPosition = a + plain.length
     edit.forceActiveFocus()
   }
 

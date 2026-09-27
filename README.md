@@ -96,3 +96,7 @@ rather than overwriting it.
 
 MIT. The bundled handwriting font, [Caveat](https://github.com/googlefonts/caveat), is licensed
 under the SIL Open Font License 1.1 (see `fonts/OFL.txt`).
+
+---
+
+Created by [HawzhinOmer](https://github.com/HawzhinOmer).
