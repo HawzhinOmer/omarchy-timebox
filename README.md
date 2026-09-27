@@ -12,7 +12,7 @@ It follows your current Omarchy theme.
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/<you>/omarchy-timebox.git --enable
+omarchy plugin add https://github.com/HawzhinOmer/omarchy-timebox.git --enable
 ```
 
 Bind it to a key in `~/.config/hypr/bindings.lua`:
