@@ -13,7 +13,7 @@ Item {
   property var manifest: null
 
   property bool opened: false
-  readonly property string dataDir: Quickshell.env("HOME") + "/.local/share/omarchy-timebox"
+  property string dataDir: Quickshell.env("HOME") + "/.local/share/omarchy-timebox"
 
   // Day state
   property date day: new Date()
@@ -26,6 +26,9 @@ Item {
   property bool loading: false
   property int revision: 0
   property bool fileExists: false
+  // Plugin preferences (reminder mode), shared with the reminder service.
+  property var settings: ({})
+  readonly property string reminderMode: Model.reminderMode(settings)
   // Set when today's file exists but can't be read or parsed. Editing is
   // blocked so a save can never overwrite data we failed to load.
   property string loadError: ""
@@ -47,6 +50,10 @@ Item {
   property color muted: Util.alpha(foreground, 0.55)
   property color selectionFill: Util.alpha(accent, 0.18)
   property string fontFamily: Style.font.menuFamily
+  // Everything you write (priorities, notes, blocks, the date) uses a bundled
+  // handwriting font, like pen on the paper planner; printed labels stay as is.
+  readonly property string handFamily: handFont.status === FontLoader.Ready ? handFont.name : fontFamily
+  readonly property real handScale: handFont.status === FontLoader.Ready ? 1.4 : 1
   readonly property int cornerRadius: Style.cornerRadius
   readonly property int boxWidth: Math.max(2, Style.space(3))
 
@@ -142,6 +149,12 @@ Item {
     root.scheduleSave()
   }
 
+  function cycleReminders() {
+    var next = Object.assign({}, root.settings, { reminders: Model.nextReminderMode(root.reminderMode) })
+    root.settings = next
+    settingsFile.setText(JSON.stringify(next, null, 2) + "\n")
+  }
+
   // ---- schedule interaction ----
 
   function currentSlot() {
@@ -183,6 +196,23 @@ Item {
   }
 
   Component.onCompleted: Quickshell.execDetached(["mkdir", "-p", root.dataDir])
+
+  FileView {
+    id: settingsFile
+    path: root.dataDir + "/settings.json"
+    atomicWrites: true
+    blockWrites: true
+    watchChanges: true
+    printErrors: false
+    onLoaded: root.settings = Model.parseSettings(text())
+    onLoadFailed: root.settings = ({})
+    onFileChanged: reload()
+  }
+
+  FontLoader {
+    id: handFont
+    source: Qt.resolvedUrl("fonts/Caveat.ttf")
+  }
 
   FileView {
     id: dayFile
@@ -374,8 +404,8 @@ Item {
                     anchors.verticalCenter: parent.verticalCenter
                     color: root.foreground
                     opacity: prow.item.done ? 0.5 : 1
-                    font.family: root.fontFamily
-                    font.pixelSize: Style.font.heading
+                    font.family: root.handFamily
+                    font.pixelSize: Style.font.heading * root.handScale
                     font.strikeout: prow.item.done
                     selectionColor: root.selectionFill
                     selectByMouse: true
@@ -466,8 +496,8 @@ Item {
                 height: Math.max(dumpFlick.height, contentHeight)
                 wrapMode: TextEdit.Wrap
                 color: root.foreground
-                font.family: root.fontFamily
-                font.pixelSize: Style.font.title
+                font.family: root.handFamily
+                font.pixelSize: Style.font.title * (1 + (root.handScale - 1) * 0.7)
                 selectionColor: root.selectionFill
                 selectByMouse: true
                 readOnly: root.locked
@@ -530,8 +560,10 @@ Item {
               horizontalAlignment: Text.AlignHCenter
               text: Qt.formatDate(root.day, "dddd, MMMM d, yyyy")
               color: root.foreground
-              font.family: root.fontFamily
-              font.pixelSize: Style.font.display
+              font.family: root.handFamily
+              font.pixelSize: Style.font.display * (1 + (root.handScale - 1) / 2)
+              fontSizeMode: Text.HorizontalFit
+              minimumPixelSize: Style.font.heading
               elide: Text.ElideRight
             }
 
@@ -549,6 +581,30 @@ Item {
               anchors.bottom: parent.bottom
               anchors.bottomMargin: Style.space(4)
               spacing: Style.space(4)
+
+              Rectangle {
+                width: bellText.implicitWidth + Style.space(16)
+                height: Style.space(28)
+                radius: root.cornerRadius
+                color: bellMouse.containsMouse ? Util.alpha(root.foreground, 0.1) : "transparent"
+                border.color: root.line
+                border.width: 1
+                Text {
+                  id: bellText
+                  anchors.centerIn: parent
+                  text: (root.reminderMode === "off" ? "󰂛  " : "󰂚  ") + Model.reminderLabel(root.reminderMode)
+                  color: root.reminderMode === "off" ? root.muted : root.foreground
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.body
+                }
+                MouseArea {
+                  id: bellMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: { root.cycleReminders(); gridKeys.forceActiveFocus() }
+                }
+              }
 
               Repeater {
                 model: [
@@ -777,25 +833,26 @@ Item {
                 verticalAlignment: Text.AlignVCenter
                 text: modelData.text
                 color: root.foreground
-                font.family: root.fontFamily
-                font.pixelSize: Math.min(Style.font.heading, grid.rowHeight * 0.5)
+                font.family: root.handFamily
+                font.pixelSize: Math.min(Style.font.heading * root.handScale, grid.rowHeight * 0.72)
                 elide: Text.ElideRight
                 z: 3
               }
             }
 
-            // Current-time marker
+            // Current-time marker: a short tick in the hour column, so it
+            // shows where "now" is without running through any tasks.
             Item {
               visible: root.isToday && root.now.getHours() >= Model.START_HOUR
               readonly property real hours: root.now.getHours() - Model.START_HOUR + root.now.getMinutes() / 60
-              x: grid.labelWidth
+              x: grid.labelWidth - width
               y: Math.min(grid.height, hours * grid.rowHeight) - 1
-              width: grid.width - grid.labelWidth
+              width: Style.space(12)
               z: 4
               Rectangle { width: parent.width; height: 2; color: root.urgentColor }
               Rectangle {
                 width: Style.space(8); height: width; radius: width / 2
-                x: -width / 2; y: 1 - height / 2
+                x: parent.width - width / 2; y: 1 - height / 2
                 color: root.urgentColor
               }
             }
@@ -851,8 +908,8 @@ Item {
                 anchors.rightMargin: Style.space(12)
                 verticalAlignment: TextInput.AlignVCenter
                 color: root.foreground
-                font.family: root.fontFamily
-                font.pixelSize: Math.min(Style.font.heading, grid.rowHeight * 0.5)
+                font.family: root.handFamily
+                font.pixelSize: Math.min(Style.font.heading * root.handScale, grid.rowHeight * 0.72)
                 selectionColor: root.selectionFill
                 selectByMouse: true
                 clip: true

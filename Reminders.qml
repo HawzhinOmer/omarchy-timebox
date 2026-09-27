@@ -17,31 +17,35 @@ Item {
   property date now: clock.date
   readonly property string dateKey: Qt.formatDate(now, "yyyy-MM-dd")
   property var slots: Model.emptyDay().slots
-  // "<date>@<slot>" of the last block announced, so a reload in the same
-  // minute can't send it twice.
-  property string lastSent: ""
+  property string mode: "start"
+  // Recent "<date>@<slot>-<lead>" keys, so a reload in the same minute
+  // can't send a reminder twice.
+  property var sent: []
 
   function minuteOfDay() {
     return root.now.getHours() * 60 + root.now.getMinutes()
   }
 
   function check() {
-    var run = Model.runStartingAt(root.slots, root.minuteOfDay())
-    if (!run) return
-    var key = root.dateKey + "@" + run.start
-    if (key === root.lastSent) return
-    root.lastSent = key
-    root.notify(run)
+    var leads = Model.reminderLeads(root.mode)
+    for (var i = 0; i < leads.length; i++) {
+      var run = Model.runStartingAt(root.slots, root.minuteOfDay() + leads[i])
+      if (!run) continue
+      var key = root.dateKey + "@" + run.start + "-" + leads[i]
+      if (root.sent.indexOf(key) !== -1) continue
+      root.sent = root.sent.concat([key]).slice(-8)
+      root.notify(run, leads[i])
+    }
   }
 
-  function notify(run) {
+  function notify(run, lead) {
     Quickshell.execDetached([
       root.omarchyPath + "/bin/omarchy-notification-send",
       "--app-name", "Timebox Planner",
       "-g", "󰃰",
       "-u", "normal",
       "-t", "10000",
-      run.text,
+      lead > 0 ? "In " + lead + " min: " + run.text : run.text,
       Model.slotTime(run.start) + " – " + Model.slotTime(run.start + run.len),
       "--exec", "omarchy-shell", "shell", "summon", "hawzhin.timebox", "{}"
     ])
@@ -49,10 +53,15 @@ Item {
 
   function nextReminder() {
     var runs = Model.computeRuns(root.slots).runs
+    var leads = Model.reminderLeads(root.mode)
+    if (!leads.length) return "reminders are off"
     var minute = root.minuteOfDay()
     for (var r = 0; r < runs.length; r++) {
-      if (Model.slotMinutes(runs[r].start) > minute)
-        return Model.slotTime(runs[r].start) + " " + runs[r].text
+      var at = Model.slotMinutes(runs[r].start) - leads[0]
+      if (at > minute) {
+        var t = new Date(2000, 0, 1, Math.floor(at / 60), at % 60)
+        return Qt.formatTime(t, "h:mm AP") + " " + runs[r].text + " (" + Model.reminderLabel(root.mode) + ")"
+      }
     }
     return "none left today"
   }
@@ -79,6 +88,16 @@ Item {
       root.slots = day ? day.slots : Model.emptyDay().slots
     }
     onLoadFailed: root.slots = Model.emptyDay().slots
+    onFileChanged: reload()
+  }
+
+  FileView {
+    id: settingsFile
+    path: root.dataDir + "/settings.json"
+    watchChanges: true
+    printErrors: false
+    onLoaded: root.mode = Model.reminderMode(Model.parseSettings(text()))
+    onLoadFailed: root.mode = "start"
     onFileChanged: reload()
   }
 

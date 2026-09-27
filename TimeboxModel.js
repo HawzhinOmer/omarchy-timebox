@@ -104,3 +104,40 @@ function runStartingAt(slots, minuteOfDay) {
   }
   return null
 }
+
+// Reminder modes, cycled from the planner and stored in settings.json.
+// Each mode lists how many minutes before a block's start to notify.
+var REMINDER_MODES = ["start", "before", "both", "off"]
+var REMINDER_BEFORE = 5
+
+function reminderMode(settings) {
+  var mode = settings && settings.reminders
+  return REMINDER_MODES.indexOf(mode) !== -1 ? mode : "start"
+}
+
+function reminderLeads(mode) {
+  if (mode === "before") return [REMINDER_BEFORE]
+  if (mode === "both") return [REMINDER_BEFORE, 0]
+  if (mode === "off") return []
+  return [0]
+}
+
+function reminderLabel(mode) {
+  if (mode === "before") return REMINDER_BEFORE + " min before"
+  if (mode === "both") return REMINDER_BEFORE + " min before + start"
+  if (mode === "off") return "Reminders off"
+  return "At start"
+}
+
+function nextReminderMode(mode) {
+  return REMINDER_MODES[(REMINDER_MODES.indexOf(mode) + 1) % REMINDER_MODES.length]
+}
+
+function parseSettings(raw) {
+  try {
+    var data = JSON.parse(raw || "{}")
+    return data && typeof data === "object" && !Array.isArray(data) ? data : {}
+  } catch (e) {
+    return {}
+  }
+}
