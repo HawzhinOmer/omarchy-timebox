@@ -281,6 +281,38 @@ Item {
     root.scheduleSave()
   }
 
+  // ---- save the page as an image (e.g. to keep on your phone) ----
+  // Buttons, cursor and hints are hidden while the picture is taken.
+  property bool exporting: false
+  property string imageDir: Quickshell.env("HOME") + "/Pictures"
+
+  function saveImage() {
+    root.inkOpen = false
+    root.paletteOpen = false
+    if (root.editing) root.commitEdit()
+    root.flush()
+    root.exporting = true
+    Qt.callLater(function() {
+      var path = root.imageDir + "/timebox-" + root.dateKey + ".png"
+      var ok = card.grabToImage(function(result) {
+        var saved = result.saveToFile(path)
+        root.exporting = false
+        Quickshell.execDetached(saved ? [
+          root.omarchyPath + "/bin/omarchy-notification-send",
+          "--app-name", "Timebox Planner", "-g", "󰋩", "-u", "normal", "-t", "10000",
+          "Planner saved as an image",
+          path.replace(Quickshell.env("HOME"), "~") + " · click to send it to your phone",
+          "--exec", "omarchy", "share", "file", path
+        ] : [
+          root.omarchyPath + "/bin/omarchy-notification-send",
+          "--app-name", "Timebox Planner", "-u", "critical",
+          "Couldn't save the planner image", path
+        ])
+      }, Qt.size(card.width * 2, card.height * 2))
+      if (!ok) root.exporting = false
+    })
+  }
+
   function commitAndMoveDown() {
     var single = root.selStart === root.selEnd
     root.commitEdit()
@@ -393,6 +425,8 @@ Item {
       id: card
       anchors.fill: parent
       readonly property int inset: Style.space(28)
+
+      Rectangle { anchors.fill: parent; color: root.background }
 
       MouseArea { anchors.fill: parent; onClicked: gridKeys.forceActiveFocus() }
 
@@ -508,10 +542,35 @@ Item {
 
             Row {
               id: navRow
+              visible: !root.exporting
               anchors.right: parent.right
               anchors.bottom: parent.bottom
               anchors.bottomMargin: Style.space(4)
               spacing: Style.space(4)
+
+              Rectangle {
+                width: saveText.implicitWidth + Style.space(16)
+                height: Style.space(28)
+                radius: root.cornerRadius
+                color: saveMouse.containsMouse ? Util.alpha(root.foreground, 0.1) : "transparent"
+                border.color: root.line
+                border.width: 1
+                Text {
+                  id: saveText
+                  anchors.centerIn: parent
+                  text: "󰋩  Save image"
+                  color: root.foreground
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.body
+                }
+                MouseArea {
+                  id: saveMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.saveImage()
+                }
+              }
 
               Rectangle {
                 id: inkButton
@@ -727,7 +786,7 @@ Item {
 
                     Text {
                       anchors.fill: parent
-                      visible: !pinput.text && !pinput.activeFocus
+                      visible: !pinput.text && !pinput.activeFocus && !root.exporting
                       text: "Priority " + (prow.index + 1)
                       color: root.muted
                       opacity: 0.6
@@ -823,7 +882,7 @@ Item {
                 Keys.onTabPressed: root.focusDump(2)
 
                 Text {
-                  visible: dumpEdit.length === 0 && !dumpEdit.activeFocus
+                  visible: dumpEdit.length === 0 && !dumpEdit.activeFocus && !root.exporting
                   text: "Everything on your mind…"
                   color: root.muted
                   opacity: 0.6
@@ -884,7 +943,7 @@ Item {
                 Keys.onTabPressed: root.focusDump(1)
 
                 Text {
-                  visible: dumpEdit2.length === 0 && !dumpEdit2.activeFocus
+                  visible: dumpEdit2.length === 0 && !dumpEdit2.activeFocus && !root.exporting
                   text: "…and more"
                   color: root.muted
                   opacity: 0.6
@@ -1032,7 +1091,7 @@ Item {
 
                 Rectangle {
                   anchors.fill: parent
-                  color: cell.selected && gridKeys.activeFocus ? root.selectionFill
+                  color: root.exporting ? "transparent" : cell.selected && gridKeys.activeFocus ? root.selectionFill
                     : (cell.selected ? Util.alpha(root.accent, 0.08) : "transparent")
                 }
 
@@ -1113,7 +1172,7 @@ Item {
 
             // Cursor outline
             Rectangle {
-              visible: gridKeys.activeFocus && !root.editing
+              visible: gridKeys.activeFocus && !root.editing && !root.exporting
               x: grid.slotX(root.cursorSlot)
               y: grid.slotY(root.cursorSlot)
               width: grid.cellWidth
@@ -1303,6 +1362,7 @@ Item {
         // ================= Footer =================
         Text {
           id: footer
+          visible: !root.exporting
           anchors.bottom: parent.bottom
           anchors.left: parent.left
           height: content.footerHeight
