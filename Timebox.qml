@@ -1309,7 +1309,7 @@ Item {
           verticalAlignment: Text.AlignBottom
           text: root.locked
             ? "⚠  " + root.loadError + ". Read-only so it isn't overwritten; fix the file, then reopen."
-            : "Type to fill  •  Tab next  •  Enter save + down  •  Ctrl C/X/V  •  A text color  •  Del clear  •  PgUp/PgDn day  •  Esc close"
+            : "Type to fill  •  Tab next  •  Enter down  •  Ctrl C/X/V  •  A color  •  Del clear  •  PgUp/PgDn day  •  Esc close"
           color: root.locked ? root.urgentColor : root.muted
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall
