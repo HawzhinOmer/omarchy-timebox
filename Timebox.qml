@@ -54,8 +54,13 @@ Item {
   property color background: Color.menu.background
   property color foreground: Color.menu.text
   // Accent color: the theme's by default, or one picked from the palette.
-  readonly property color accent: root.settings.accent ? root.settings.accent : Color.accent
-  readonly property var palette: ["", "#6aa9ff", "#4fd1c5", "#7bc86c", "#f2d16b", "#f28fad", "#b48ead", "#ef6b6b"]
+  // All colors come from the current Omarchy theme (colors.toml) by name.
+  property var themeColors: ({})
+  readonly property color accent: {
+    var a = root.settings.accent
+    return a && a.charAt(0) !== "#" ? root.tone(a) : root.tone("accent")
+  }
+  readonly property var palette: Model.paletteTones(root.themeColors)
   property bool paletteOpen: false
   property color line: Util.alpha(foreground, 0.28)
   property color muted: Util.alpha(foreground, 0.55)
@@ -119,8 +124,8 @@ Item {
     root.loading = true
     root.slots = d.slots
     root.priorities = d.priorities
-    root.brainDump = Model.isRichText(d.brainDump) ? d.brainDump : Model.plainToHtml(d.brainDump)
-    root.brainDump2 = Model.isRichText(d.brainDump2) ? d.brainDump2 : Model.plainToHtml(d.brainDump2)
+    root.brainDump = Model.tonesToColors(Model.isRichText(d.brainDump) ? d.brainDump : Model.plainToHtml(d.brainDump), root.tone)
+    root.brainDump2 = Model.tonesToColors(Model.isRichText(d.brainDump2) ? d.brainDump2 : Model.plainToHtml(d.brainDump2), root.tone)
     root.slotColors = d.slotColors
     root.otherSlots = d.otherSlots
     root.extraFields = d.extra
@@ -142,8 +147,8 @@ Item {
     if (root.locked) return
     var d = {
       slots: root.slots, priorities: root.priorities,
-      brainDump: dumpEdit.length ? Model.cleanRichText(root.brainDump) : "",
-      brainDump2: dumpEdit2.length ? Model.cleanRichText(root.brainDump2) : "",
+      brainDump: dumpEdit.length ? Model.colorsToTones(Model.cleanRichText(root.brainDump), root.tonePairs()) : "",
+      brainDump2: dumpEdit2.length ? Model.colorsToTones(Model.cleanRichText(root.brainDump2), root.tonePairs()) : "",
       slotColors: root.slotColors, otherSlots: root.otherSlots, extra: root.extraFields
     }
     var empty = !d.brainDump && !d.brainDump2 && root.slots.every(function(s) { return !s })
@@ -167,6 +172,23 @@ Item {
     for (var i = root.selStart; i <= root.selEnd; i++) next[i] = text
     root.slots = next
     root.scheduleSave()
+  }
+
+  function tone(name) {
+    var t = root.themeColors
+    if (!name) return root.foreground
+    if (name.charAt(0) === "#") return name
+    if (name === "accent") return t.accent || Color.accent
+    if (name === "foreground") return t.foreground || Color.foreground
+    if (name === "red") return t.red || Color.urgent
+    return t[name] || t.accent || Color.accent
+  }
+
+  function tonePairs() {
+    var names = ["foreground", "red", "accent"].concat(Model.THEME_TONES)
+    var out = []
+    for (var i = 0; i < names.length; i++) out.push({ name: names[i], color: String(root.tone(names[i])) })
+    return out
   }
 
   function setSetting(key, value) {
@@ -238,6 +260,22 @@ Item {
     printErrors: false
     onLoaded: root.settings = Model.parseSettings(text())
     onLoadFailed: root.settings = ({})
+    onFileChanged: reload()
+  }
+
+  FileView {
+    id: themeFile
+    path: Quickshell.env("HOME") + "/.local/state/omarchy/current/theme/colors.toml"
+    watchChanges: true
+    printErrors: false
+    onLoaded: {
+      var next = Model.parseThemeColors(text())
+      // Save pending edits with the old theme's colors so they map back to
+      // names, then reload so notes pick up the new theme.
+      if (saveTimer.running) { saveTimer.stop(); root.save() }
+      root.themeColors = next
+      if (root.opened && !root.locked) dayFile.reload()
+    }
     onFileChanged: reload()
   }
 
@@ -448,7 +486,7 @@ Item {
                   anchors.bottom: parent.bottom
                   anchors.bottomMargin: Style.space(5)
                   width: Style.space(14); height: Math.max(2, Style.space(3))
-                  color: "#ef5350"
+                  color: root.tone("red")
                 }
                 MouseArea {
                   id: inkMouse
@@ -477,8 +515,8 @@ Item {
                     Repeater {
                       model: [
                         { label: "Default", ink: "" },
-                        { label: "Red", ink: "#ef5350" },
-                        { label: "Accent", ink: String(root.accent) }
+                        { label: "Red", ink: "red" },
+                        { label: "Accent", ink: root.settings.accent && root.settings.accent.charAt(0) !== "#" ? root.settings.accent : "accent" }
                       ]
                       Rectangle {
                         required property var modelData
@@ -492,7 +530,7 @@ Item {
                           anchors.leftMargin: Style.space(8)
                           anchors.verticalCenter: parent.verticalCenter
                           width: Style.space(12); height: width; radius: width / 2
-                          color: parent.modelData.ink || root.foreground
+                          color: root.tone(parent.modelData.ink)
                         }
                         Text {
                           id: inkLabel
@@ -500,7 +538,7 @@ Item {
                           anchors.leftMargin: Style.space(6)
                           anchors.verticalCenter: parent.verticalCenter
                           text: parent.modelData.label
-                          color: parent.modelData.ink || root.foreground
+                          color: root.tone(parent.modelData.ink)
                           font.family: root.fontFamily
                           font.pixelSize: Style.font.body
                         }
@@ -558,15 +596,15 @@ Item {
                       model: root.palette
                       Rectangle {
                         required property var modelData
-                        readonly property color swatch: modelData ? modelData : Color.accent
-                        readonly property bool current: (root.settings.accent || "") === modelData
+                        readonly property color swatch: root.tone(modelData)
+                        readonly property bool current: (root.settings.accent && root.settings.accent.charAt(0) !== "#" ? root.settings.accent : "accent") === modelData
                         width: Style.space(24); height: width; radius: width / 2
                         color: swatch
                         border.color: root.foreground
                         border.width: current ? Math.max(2, Style.space(2)) : 0
                         Text {
                           anchors.centerIn: parent
-                          visible: !parent.modelData
+                          visible: parent.modelData === "accent"
                           text: "T"
                           color: root.background
                           font.family: root.fontFamily
@@ -577,7 +615,7 @@ Item {
                           anchors.fill: parent
                           cursorShape: Qt.PointingHandCursor
                           onClicked: {
-                            root.setSetting("accent", parent.modelData)
+                            root.setSetting("accent", parent.modelData === "accent" ? "" : parent.modelData)
                             root.paletteOpen = false
                             gridKeys.forceActiveFocus()
                           }
@@ -728,7 +766,7 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: Style.space(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    color: prow.item.color || root.foreground
+                    color: root.tone(prow.item.color)
                     opacity: prow.item.done ? 0.5 : 1
                     font.family: root.handFamily
                     font.pixelSize: Style.font.heading * root.handScale
@@ -1117,7 +1155,7 @@ Item {
                 height: grid.rowHeight
                 verticalAlignment: Text.AlignVCenter
                 text: modelData.text
-                color: root.slotColors[Model.slotKey(start)] || root.foreground
+                color: root.tone(root.slotColors[Model.slotKey(start)])
                 font.family: root.handFamily
                 font.pixelSize: Math.min(Style.font.heading * root.handScale, grid.rowHeight * 0.72)
                 elide: Text.ElideRight
@@ -1235,7 +1273,7 @@ Item {
     } else if (t.charAt(0) === "p") {
       root.setPriority(Number(t.slice(1)), { color: color || undefined })
     } else {
-      root.colorSelection(t === "dump2" ? dumpEdit2 : dumpEdit, color || String(root.foreground))
+      root.colorSelection(t === "dump2" ? dumpEdit2 : dumpEdit, String(root.tone(color || "foreground")))
     }
   }
 

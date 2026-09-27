@@ -192,3 +192,46 @@ function parseSettings(raw) {
     return {}
   }
 }
+
+// ---- Theme colors ----
+// Colors are stored by name ("red", "accent", ...) and looked up in the
+// current Omarchy theme, so everything recolors when the theme changes.
+var THEME_TONES = ["accent", "red", "yellow", "orange", "green", "cyan", "blue", "magenta"]
+
+function parseThemeColors(toml) {
+  var out = {}
+  var re = /^\s*([a-z_]+)\s*=\s*"(#[0-9a-fA-F]{6,8})"/gm
+  var m
+  while ((m = re.exec(String(toml || ""))) !== null) out[m[1]] = m[2].toLowerCase()
+  return out
+}
+
+// Theme tones for the accent palette, skipping ones that repeat a color.
+function paletteTones(theme) {
+  var seen = {}, out = []
+  for (var i = 0; i < THEME_TONES.length; i++) {
+    var t = THEME_TONES[i]
+    var c = t === "accent" ? (theme.accent || "") : theme[t]
+    if (t !== "accent" && !c) continue
+    if (c && seen[c]) continue
+    if (c) seen[c] = true
+    out.push(t)
+  }
+  return out
+}
+
+// Rich-text notes keep colors as "tb-<name>" in the file; swap them for the
+// theme's actual colors on load, and back again on save.
+function tonesToColors(html, resolve) {
+  return String(html || "").replace(/color:\s*tb-([a-z_]+)/g, function(_, name) { return "color:" + resolve(name) })
+}
+
+function colorsToTones(html, pairs) {
+  var out = String(html || "")
+  for (var i = 0; i < pairs.length; i++) {
+    var hex = String(pairs[i].color).toLowerCase()
+    if (!/^#[0-9a-f]{6}$/.test(hex)) continue
+    out = out.replace(new RegExp("color:\\s*" + hex + "(?![0-9a-f])", "gi"), "color:tb-" + pairs[i].name)
+  }
+  return out
+}

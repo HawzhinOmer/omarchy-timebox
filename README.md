@@ -11,10 +11,10 @@ It follows your current Omarchy theme, and everything you write appears in a han
 - **Schedule**: `:00` / `:30` slots. Consecutive slots with the same text are drawn as one boxed timebox.
 - On today's page, the current hour's number is highlighted.
 - **Brain Dump**: two columns of notes side by side.
-- **Text color**: the **A** button colors what you've selected (Default, Red, or Accent): highlighted
+- **Text color**: the **A** button colors what you've selected with your theme's colors (Default, Red, or Accent): highlighted
   words in the Brain Dump, the priority you're in, or the selected schedule slots.
-- **Colors**: the round button in the header picks the accent color used for blocks and highlights
-  (T = your Omarchy theme's color).
+- **Colors**: every color comes from your Omarchy theme and changes with it. The round button picks
+  which theme color the blocks and highlights use (T = the theme's accent).
 - **Reminders**: a desktop notification when each block starts (e.g. `Deep work · 9:00 AM – 10:30 AM`).
   Click it to open the planner. The bell button next to the date switches between *At start*,
   *5 min before*, *5 min before + start*, and *Off*. Check the next one with `omarchy-shell hawzhin.timebox.reminders next`.
