@@ -10,6 +10,8 @@ It follows your current Omarchy theme.
 - **Brain Dump**: free-form notes on a dotted pad.
 - **Schedule**: `:00` / `:30` slots. Consecutive slots with the same text are drawn as one boxed timebox.
 - A red line marks the current time on today's page.
+- **Bar widget**: shows the block you're in and how long is left (`Deep work · 56m`),
+  or the next block when nothing is scheduled right now. Hover for details; click to open the planner.
 
 ## Install
 
@@ -17,7 +19,13 @@ It follows your current Omarchy theme.
 omarchy plugin add https://github.com/HawzhinOmer/omarchy-timebox.git --enable
 ```
 
-Bind it to a key in `~/.config/hypr/bindings.lua`:
+`--enable` puts the bar widget in the center section. Move it with, for example:
+
+```bash
+omarchy bar move hawzhin.timebox --after omarchy.clock
+```
+
+Bind the planner to a key in `~/.config/hypr/bindings.lua`:
 
 ```lua
 o.bind("SUPER + D", "Timebox planner", "omarchy-shell shell toggle hawzhin.timebox")
@@ -48,6 +56,16 @@ Omarchy with the Quickshell-based shell (Omarchy 4 / Quattro). No other dependen
 | Home | Jump to today |
 | Tab | Jump to priorities, then brain dump |
 | Esc | Close |
+
+## Bar widget settings
+
+Set these on the widget's entry in `~/.config/omarchy/shell.json`, e.g.
+`omarchy bar set hawzhin.timebox maxLength 20`:
+
+| Key | Default | Meaning |
+| --- | --- | --- |
+| `maxLength` | `28` | Longest block name before it's shortened with `…` |
+| `showNext` | `true` | Show the next block when nothing is scheduled right now |
 
 ## Data
 
