@@ -23,7 +23,14 @@ Item {
   property var slots: Model.emptyDay().slots
   property var priorities: Model.emptyDay().priorities
   property string brainDump: ""
+  property string brainDump2: ""
+  property var slotColors: ({})
   property var otherSlots: ({})
+  property var extraFields: ({})
+  // Which field the text-color button applies to: "grid", "p0".."p2",
+  // "dump1" or "dump2" (whatever was focused last).
+  property string colorTarget: "grid"
+  property bool inkOpen: false
   property bool loading: false
   property int revision: 0
   property bool fileExists: false
@@ -112,8 +119,11 @@ Item {
     root.loading = true
     root.slots = d.slots
     root.priorities = d.priorities
-    root.brainDump = d.brainDump
+    root.brainDump = Model.isRichText(d.brainDump) ? d.brainDump : Model.plainToHtml(d.brainDump)
+    root.brainDump2 = Model.isRichText(d.brainDump2) ? d.brainDump2 : Model.plainToHtml(d.brainDump2)
+    root.slotColors = d.slotColors
     root.otherSlots = d.otherSlots
+    root.extraFields = d.extra
     root.revision++
     root.loading = false
   }
@@ -130,8 +140,13 @@ Item {
 
   function save() {
     if (root.locked) return
-    var d = { slots: root.slots, priorities: root.priorities, brainDump: root.brainDump, otherSlots: root.otherSlots }
-    var empty = !root.brainDump && root.slots.every(function(s) { return !s })
+    var d = {
+      slots: root.slots, priorities: root.priorities,
+      brainDump: dumpEdit.length ? Model.cleanRichText(root.brainDump) : "",
+      brainDump2: dumpEdit2.length ? Model.cleanRichText(root.brainDump2) : "",
+      slotColors: root.slotColors, otherSlots: root.otherSlots, extra: root.extraFields
+    }
+    var empty = !d.brainDump && !d.brainDump2 && root.slots.every(function(s) { return !s })
       && root.priorities.every(function(p) { return !p.text })
     if (empty && !root.fileExists) return
     dayFile.setText(Model.serializeDay(root.dateKey, d))
@@ -193,6 +208,12 @@ Item {
     root.editing = false
     root.fillSelection(editor.text.trim())
     gridKeys.forceActiveFocus()
+  }
+
+  function commitAndMoveDown() {
+    var single = root.selStart === root.selEnd
+    root.commitEdit()
+    if (single) root.moveCursor(2, false)
   }
 
   function cancelEdit() {
@@ -275,7 +296,7 @@ Item {
     Shortcut {
       sequences: ["Escape"]
       onActivated: {
-        if (root.paletteOpen) root.paletteOpen = false
+        if (root.paletteOpen || root.inkOpen) { root.paletteOpen = false; root.inkOpen = false }
         else if (root.editing) root.cancelEdit()
         else root.dismiss()
       }
@@ -406,6 +427,97 @@ Item {
               spacing: Style.space(4)
 
               Rectangle {
+                id: inkButton
+                width: Style.space(28)
+                height: Style.space(28)
+                radius: root.cornerRadius
+                color: inkMouse.containsMouse || root.inkOpen ? Util.alpha(root.foreground, 0.1) : "transparent"
+                border.color: root.line
+                border.width: 1
+                Text {
+                  anchors.centerIn: parent
+                  anchors.verticalCenterOffset: -Style.space(2)
+                  text: "A"
+                  color: root.foreground
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.title
+                  font.bold: true
+                }
+                Rectangle {
+                  anchors.horizontalCenter: parent.horizontalCenter
+                  anchors.bottom: parent.bottom
+                  anchors.bottomMargin: Style.space(5)
+                  width: Style.space(14); height: Math.max(2, Style.space(3))
+                  color: "#ef5350"
+                }
+                MouseArea {
+                  id: inkMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: { root.paletteOpen = false; root.inkOpen = !root.inkOpen }
+                }
+
+                Rectangle {
+                  visible: root.inkOpen
+                  anchors.right: parent.right
+                  anchors.top: parent.bottom
+                  anchors.topMargin: Style.space(6)
+                  width: inkChoices.implicitWidth + Style.space(16)
+                  height: inkChoices.implicitHeight + Style.space(16)
+                  radius: root.cornerRadius
+                  color: root.background
+                  border.color: root.line
+                  border.width: 1
+
+                  Row {
+                    id: inkChoices
+                    anchors.centerIn: parent
+                    spacing: Style.space(6)
+                    Repeater {
+                      model: [
+                        { label: "Default", ink: "" },
+                        { label: "Red", ink: "#ef5350" },
+                        { label: "Accent", ink: String(root.accent) }
+                      ]
+                      Rectangle {
+                        required property var modelData
+                        width: inkLabel.implicitWidth + Style.space(34)
+                        height: Style.space(26)
+                        radius: root.cornerRadius
+                        color: chipMouse.containsMouse ? Util.alpha(root.foreground, 0.1) : "transparent"
+                        Rectangle {
+                          id: inkDot
+                          anchors.left: parent.left
+                          anchors.leftMargin: Style.space(8)
+                          anchors.verticalCenter: parent.verticalCenter
+                          width: Style.space(12); height: width; radius: width / 2
+                          color: parent.modelData.ink || root.foreground
+                        }
+                        Text {
+                          id: inkLabel
+                          anchors.left: inkDot.right
+                          anchors.leftMargin: Style.space(6)
+                          anchors.verticalCenter: parent.verticalCenter
+                          text: parent.modelData.label
+                          color: parent.modelData.ink || root.foreground
+                          font.family: root.fontFamily
+                          font.pixelSize: Style.font.body
+                        }
+                        MouseArea {
+                          id: chipMouse
+                          anchors.fill: parent
+                          hoverEnabled: true
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: root.applyInk(parent.modelData.ink)
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+
+              Rectangle {
                 id: colorButton
                 width: Style.space(28)
                 height: Style.space(28)
@@ -423,7 +535,7 @@ Item {
                   anchors.fill: parent
                   hoverEnabled: true
                   cursorShape: Qt.PointingHandCursor
-                  onClicked: root.paletteOpen = !root.paletteOpen
+                  onClicked: { root.inkOpen = false; root.paletteOpen = !root.paletteOpen }
                 }
 
                 Rectangle {
@@ -616,7 +728,7 @@ Item {
                     anchors.right: parent.right
                     anchors.rightMargin: Style.space(14)
                     anchors.verticalCenter: parent.verticalCenter
-                    color: root.foreground
+                    color: prow.item.color || root.foreground
                     opacity: prow.item.done ? 0.5 : 1
                     font.family: root.handFamily
                     font.pixelSize: Style.font.heading * root.handScale
@@ -626,6 +738,7 @@ Item {
                     readOnly: root.locked
                     clip: true
                     onTextChanged: if (!root.loading) root.setPriority(prow.index, { text: text })
+                    onActiveFocusChanged: if (activeFocus) root.colorTarget = "p" + prow.index
                     Keys.onEscapePressed: root.dismiss()
                     Keys.onReturnPressed: root.focusPriority(prow.index + 1)
                     Keys.onTabPressed: root.focusPriority(prow.index + 1)
@@ -692,8 +805,11 @@ Item {
 
             Flickable {
               id: dumpFlick
-              anchors.fill: parent
+              anchors.top: parent.top
+              anchors.bottom: parent.bottom
               anchors.margins: Style.space(16)
+              anchors.left: parent.left
+              width: (dumpBox.width - Style.space(16) * 4 - 1) / 2
               contentWidth: width
               contentHeight: dumpEdit.contentHeight
               boundsBehavior: Flickable.StopAtBounds
@@ -706,21 +822,26 @@ Item {
 
               TextEdit {
                 id: dumpEdit
+                objectName: "dumpEdit"
                 width: dumpFlick.width
                 height: Math.max(dumpFlick.height, contentHeight)
+                textFormat: TextEdit.RichText
                 wrapMode: TextEdit.Wrap
                 color: root.foreground
                 font.family: root.handFamily
                 font.pixelSize: Style.font.title * (1 + (root.handScale - 1) * 0.7)
                 selectionColor: root.selectionFill
                 selectByMouse: true
+                persistentSelection: true
                 readOnly: root.locked
+                onActiveFocusChanged: if (activeFocus) root.colorTarget = "dump1"
                 onCursorRectangleChanged: dumpFlick.ensureVisible(cursorRectangle)
                 onTextChanged: if (!root.loading && !root.locked) { root.brainDump = text; root.scheduleSave() }
                 Keys.onEscapePressed: root.dismiss()
+                Keys.onTabPressed: root.focusDump(2)
 
                 Text {
-                  visible: !dumpEdit.text && !dumpEdit.activeFocus
+                  visible: dumpEdit.length === 0 && !dumpEdit.activeFocus
                   text: "Everything on your mind…"
                   color: root.muted
                   opacity: 0.6
@@ -733,6 +854,68 @@ Item {
                 }
               }
             }
+
+            Rectangle {
+              anchors.horizontalCenter: parent.horizontalCenter
+              anchors.top: parent.top
+              anchors.bottom: parent.bottom
+              anchors.margins: Style.space(10)
+              width: 1
+              color: root.line
+            }
+
+            Flickable {
+              id: dumpFlick2
+              anchors.top: parent.top
+              anchors.bottom: parent.bottom
+              anchors.margins: Style.space(16)
+              anchors.right: parent.right
+              width: (dumpBox.width - Style.space(16) * 4 - 1) / 2
+              contentWidth: width
+              contentHeight: dumpEdit2.contentHeight
+              boundsBehavior: Flickable.StopAtBounds
+              clip: true
+
+              function ensureVisible(r) {
+                if (contentY >= r.y) contentY = r.y
+                else if (contentY + height <= r.y + r.height) contentY = r.y + r.height - height
+              }
+
+              TextEdit {
+                id: dumpEdit2
+                objectName: "dumpEdit2"
+                width: dumpFlick2.width
+                height: Math.max(dumpFlick2.height, contentHeight)
+                textFormat: TextEdit.RichText
+                wrapMode: TextEdit.Wrap
+                color: root.foreground
+                font.family: root.handFamily
+                font.pixelSize: Style.font.title * (1 + (root.handScale - 1) * 0.7)
+                selectionColor: root.selectionFill
+                selectByMouse: true
+                persistentSelection: true
+                readOnly: root.locked
+                onActiveFocusChanged: if (activeFocus) root.colorTarget = "dump2"
+                onCursorRectangleChanged: dumpFlick2.ensureVisible(cursorRectangle)
+                onTextChanged: if (!root.loading && !root.locked) { root.brainDump2 = text; root.scheduleSave() }
+                Keys.onEscapePressed: root.dismiss()
+                Keys.onTabPressed: root.focusDump(1)
+
+                Text {
+                  visible: dumpEdit2.length === 0 && !dumpEdit2.activeFocus
+                  text: "…and more"
+                  color: root.muted
+                  opacity: 0.6
+                  font: dumpEdit2.font
+                }
+
+                Connections {
+                  target: root
+                  function onRevisionChanged() { dumpEdit2.text = root.brainDump2 }
+                }
+              }
+            }
+
           }
         }
 
@@ -794,6 +977,7 @@ Item {
               id: gridKeys
               anchors.fill: parent
               focus: true
+              onActiveFocusChanged: if (activeFocus) root.colorTarget = "grid"
 
               Keys.onPressed: function(event) {
                 var shift = (event.modifiers & Qt.ShiftModifier) !== 0
@@ -933,7 +1117,7 @@ Item {
                 height: grid.rowHeight
                 verticalAlignment: Text.AlignVCenter
                 text: modelData.text
-                color: root.foreground
+                color: root.slotColors[Model.slotKey(start)] || root.foreground
                 font.family: root.handFamily
                 font.pixelSize: Math.min(Style.font.heading * root.handScale, grid.rowHeight * 0.72)
                 elide: Text.ElideRight
@@ -997,10 +1181,10 @@ Item {
                 selectionColor: root.selectionFill
                 selectByMouse: true
                 clip: true
-                Keys.onReturnPressed: root.commitEdit()
+                Keys.onReturnPressed: root.commitAndMoveDown()
                 Keys.onTabPressed: { root.commitEdit(); root.moveCursor(1, false) }
                 Keys.onBacktabPressed: { root.commitEdit(); root.moveCursor(-1, false) }
-                Keys.onEnterPressed: root.commitEdit()
+                Keys.onEnterPressed: root.commitAndMoveDown()
                 Keys.onEscapePressed: root.cancelEdit()
                 onActiveFocusChanged: if (!activeFocus && root.editing) root.commitEdit()
               }
@@ -1017,7 +1201,7 @@ Item {
           verticalAlignment: Text.AlignBottom
           text: root.locked
             ? "⚠  " + root.loadError + ". Read-only so it isn't overwritten; fix the file, then reopen."
-            : "Drag to select slots  •  type or Enter to fill  •  Tab next slot  •  Del to clear  •  PgUp/PgDn change day  •  Home today  •  Esc close"
+            : "Type to fill  •  Tab next  •  Enter save + down  •  A text color  •  Del clear  •  PgUp/PgDn day  •  Esc close"
           color: root.locked ? root.urgentColor : root.muted
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall
@@ -1028,6 +1212,42 @@ Item {
   }
 
   property color urgentColor: Color.urgent
+
+  function focusDump(n) {
+    if (n === 2) dumpEdit2.forceActiveFocus()
+    else dumpEdit.forceActiveFocus()
+  }
+
+  // Text color ("" = default ink) for whatever was focused last.
+  function applyInk(color) {
+    root.inkOpen = false
+    if (root.locked) return
+    var t = root.colorTarget
+    if (t === "grid") {
+      var next = Object.assign({}, root.slotColors)
+      for (var i = root.selStart; i <= root.selEnd; i++) {
+        if (color) next[Model.slotKey(i)] = color
+        else delete next[Model.slotKey(i)]
+      }
+      root.slotColors = next
+      root.scheduleSave()
+      gridKeys.forceActiveFocus()
+    } else if (t.charAt(0) === "p") {
+      root.setPriority(Number(t.slice(1)), { color: color || undefined })
+    } else {
+      root.colorSelection(t === "dump2" ? dumpEdit2 : dumpEdit, color || String(root.foreground))
+    }
+  }
+
+  function colorSelection(edit, color) {
+    var a = edit.selectionStart, b = edit.selectionEnd
+    if (a === b) return
+    var plain = edit.getText(a, b).replace(/\u2029/g, "\n")
+    edit.remove(a, b)
+    edit.insert(a, '<span style="color:' + color + ';">' + Model.plainToHtml(plain) + '</span>')
+    edit.select(a, a + plain.length)
+    edit.forceActiveFocus()
+  }
 
   function focusPriority(i) {
     if (i >= Model.PRIORITIES) { dumpEdit.forceActiveFocus(); return }

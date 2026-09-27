@@ -25,8 +25,14 @@ function emptyDay() {
   for (var i = 0; i < SLOTS; i++) slots.push("")
   var priorities = []
   for (var p = 0; p < PRIORITIES; p++) priorities.push({ text: "", done: false })
-  return { slots: slots, priorities: priorities, brainDump: "", otherSlots: {} }
+  return {
+    slots: slots, priorities: priorities,
+    brainDump: "", brainDump2: "",
+    slotColors: {}, otherSlots: {}, extra: {}
+  }
 }
+
+var KNOWN_FIELDS = ["date", "priorities", "brainDump", "brainDump2", "slots", "slotColors"]
 
 // Returns null when the file has content that isn't a valid day, so callers
 // can refuse to overwrite it instead of treating it as an empty day.
@@ -54,9 +60,20 @@ function parseDay(raw) {
     for (var p = 0; p < PRIORITIES && p < data.priorities.length; p++) {
       var item = data.priorities[p] || {}
       day.priorities[p] = { text: String(item.text || ""), done: !!item.done }
+      if (typeof item.color === "string" && item.color) day.priorities[p].color = item.color
     }
   }
   if (typeof data.brainDump === "string") day.brainDump = data.brainDump
+  if (typeof data.brainDump2 === "string") day.brainDump2 = data.brainDump2
+  if (data.slotColors && typeof data.slotColors === "object" && !Array.isArray(data.slotColors)) {
+    for (var c in data.slotColors) {
+      if (typeof data.slotColors[c] === "string") day.slotColors[c] = data.slotColors[c]
+    }
+  }
+  // Fields written by a newer version are carried through untouched.
+  for (var f in data) {
+    if (KNOWN_FIELDS.indexOf(f) === -1) day.extra[f] = data[f]
+  }
   return day
 }
 
@@ -67,12 +84,37 @@ function serializeDay(dateKey, day) {
   for (var i = 0; i < SLOTS; i++) {
     if (day.slots[i]) slots[slotKey(i)] = day.slots[i]
   }
-  return JSON.stringify({
-    date: dateKey,
-    priorities: day.priorities,
-    brainDump: day.brainDump,
-    slots: slots
-  }, null, 2) + "\n"
+  var out = {}
+  var extra = day.extra || {}
+  for (var f in extra) out[f] = extra[f]
+  out.date = dateKey
+  out.priorities = day.priorities
+  out.brainDump = day.brainDump
+  if (day.brainDump2) out.brainDump2 = day.brainDump2
+  out.slots = slots
+  var colors = day.slotColors || {}
+  if (Object.keys(colors).length) out.slotColors = colors
+  return JSON.stringify(out, null, 2) + "\n"
+}
+
+// Brain dump notes are stored as rich text (so words can be colored). Older
+// files hold plain text; turn that into equivalent HTML on load.
+function isRichText(text) {
+  return /^\s*<(!DOCTYPE|html|p[\s>]|body)/i.test(text || "")
+}
+
+function plainToHtml(text) {
+  return String(text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")
+}
+
+// Keep only colors from Qt's generated HTML, so the stored note follows the
+// planner's current font and size instead of freezing the ones in use today.
+function cleanRichText(html) {
+  return String(html || "")
+    .replace(/font-family:[^;"]*;?/g, "")
+    .replace(/font-size:[^;"]*;?/g, "")
+    .replace(/font-weight:[^;"]*;?/g, "")
+    .replace(/font-style:[^;"]*;?/g, "")
 }
 
 // Consecutive slots holding the same text form one run; runs of two or more

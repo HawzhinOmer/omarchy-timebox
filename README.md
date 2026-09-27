@@ -10,6 +10,9 @@ It follows your current Omarchy theme, and everything you write appears in a han
 - **Brain Dump**: free-form notes on a dotted pad.
 - **Schedule**: `:00` / `:30` slots. Consecutive slots with the same text are drawn as one boxed timebox.
 - On today's page, the current hour's number is highlighted.
+- **Brain Dump**: two columns of notes side by side.
+- **Text color**: the **A** button colors what you've selected (Default, Red, or Accent): highlighted
+  words in the Brain Dump, the priority you're in, or the selected schedule slots.
 - **Colors**: the round button in the header picks the accent color used for blocks and highlights
   (T = your Omarchy theme's color).
 - **Reminders**: a desktop notification when each block starts (e.g. `Deep work · 9:00 AM – 10:30 AM`).
@@ -63,7 +66,8 @@ Omarchy with the Quickshell-based shell (Omarchy 4 / Quattro). No other dependen
 | Key | Action |
 | --- | --- |
 | Click / drag, Shift+click | Select slots |
-| Type or Enter | Fill the selected slots (Enter saves, Esc cancels) |
+| Type or Enter | Fill the selected slots (Esc cancels) |
+| Enter while typing | Save and move down one row, like a spreadsheet |
 | Del / Backspace | Clear the selected slots |
 | Arrows, Shift+arrows | Move / extend the selection |
 | Tab / Shift+Tab | Next / previous slot (saves what you're typing first) |
