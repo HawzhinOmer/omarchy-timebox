@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "hawzhin.timebox",
+  "name": "Timebox Planner",
+  "version": "1.0.0",
+  "author": "hawzhin",
+  "description": "Daily timebox planner: top priorities, brain dump, and half-hour schedule",
+  "kinds": [
+    "overlay"
+  ],
+  "keepLoaded": false,
+  "entryPoints": {
+    "overlay": "Timebox.qml"
+  }
+}
