@@ -4,6 +4,8 @@ A daily timebox planner for the [Omarchy](https://omarchy.org) shell, modeled on
 "Daily Timebox Planner": top priorities, a brain dump, and a half-hour schedule from 5 AM to 11 PM.
 It follows your current Omarchy theme.
 
+![Timebox Planner](preview.png)
+
 - **Top Priorities**: three items; click the circle to mark one done.
 - **Brain Dump**: free-form notes on a dotted pad.
 - **Schedule**: `:00` / `:30` slots. Consecutive slots with the same text are drawn as one boxed timebox.
@@ -20,6 +22,19 @@ Bind it to a key in `~/.config/hypr/bindings.lua`:
 ```lua
 o.bind("SUPER + D", "Timebox planner", "omarchy-shell shell toggle hawzhin.timebox")
 ```
+
+## Remove
+
+```bash
+omarchy plugin remove hawzhin.timebox
+```
+
+Then delete the keybinding line from `~/.config/hypr/bindings.lua`. Your saved days stay in
+`~/.local/share/omarchy-timebox/`; delete that folder too if you don't want them.
+
+## Requirements
+
+Omarchy with the Quickshell-based shell (Omarchy 4 / Quattro). No other dependencies.
 
 ## Keys
 
