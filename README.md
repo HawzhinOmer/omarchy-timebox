@@ -22,6 +22,13 @@ It follows your current Omarchy theme, and everything you write appears in a han
 - **Bar widget**: shows the block you're in and how long is left (`Deep work · 56m`),
   or the next block when nothing is scheduled right now. Hover for details; click to open the planner.
 
+## Use it on the web
+
+No Omarchy? Use the web version: **https://hawzhinomer.github.io/omarchy-timebox/**
+It has the same features, with Gruvbox Dark Soft and Gruvbox Light Soft themes (☀/☾ button;
+it follows your system by default). It works on phones too. Plans are saved in that browser,
+and reminders fire while the page is open.
+
 ## Install
 
 ```bash
