@@ -10,7 +10,7 @@ It follows your current Omarchy theme, and everything you write appears in a han
 - **Brain Dump**: free-form notes on a dotted pad, in two columns.
 - **Schedule**: `:00` / `:30` slots. Consecutive slots with the same text are drawn as one boxed timebox.
 - On today's page, the current hour's number is highlighted.
-- **Save image**: saves the day as a picture in `~/Pictures/timebox-<date>.png`; click the
+- **Save image**: saves a phone-sized poster of the day (date, priorities, schedule) to `~/Pictures/timebox-<date>.png`; click the
   notification to send it to your phone with LocalSend.
 - **Text color**: the **A** button colors what you've selected with your theme's colors (Default, Red, or Accent): highlighted
   words in the Brain Dump, the priority you're in, or the selected schedule slots.
