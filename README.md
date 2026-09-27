@@ -31,13 +31,22 @@ Bind the planner to a key in `~/.config/hypr/bindings.lua`:
 o.bind("SUPER + D", "Timebox planner", "omarchy-shell shell toggle hawzhin.timebox")
 ```
 
+The planner opens as a normal window (close it with Esc or SUPER + Q). To have it open floating
+and centered instead of tiled, add this to `~/.config/hypr/hyprland.lua`:
+
+```lua
+o.window({ class = "^org.quickshell$", title = "^Timebox Planner$" },
+  { float = true, center = true, size = { 1280, 800 }, tag = "-default-opacity", opacity = "1 1" })
+```
+
 ## Remove
 
 ```bash
 omarchy plugin remove hawzhin.timebox
 ```
 
-Then delete the keybinding line from `~/.config/hypr/bindings.lua`. Your saved days stay in
+Then delete the keybinding line from `~/.config/hypr/bindings.lua` (and the window rule from
+`~/.config/hypr/hyprland.lua` if you added it). Your saved days stay in
 `~/.local/share/omarchy-timebox/`; delete that folder too if you don't want them.
 
 ## Requirements
@@ -70,6 +79,8 @@ Set these on the widget's entry in `~/.config/omarchy/shell.json`, e.g.
 ## Data
 
 Each day is saved automatically as JSON in `~/.local/share/omarchy-timebox/YYYY-MM-DD.json`.
+If a day's file can't be read or isn't valid JSON, the planner opens it read-only with a warning
+rather than overwriting it.
 
 ## License
 

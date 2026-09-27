@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "hawzhin.timebox",
   "name": "Timebox Planner",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "author": "hawzhin",
   "description": "Daily timebox planner: top priorities, brain dump, and half-hour schedule",
   "kinds": [

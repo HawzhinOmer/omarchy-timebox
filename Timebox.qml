@@ -1,6 +1,5 @@
 import Quickshell
 import Quickshell.Io
-import Quickshell.Wayland
 import QtQuick
 import qs.Commons
 import qs.Ui
@@ -44,8 +43,6 @@ Item {
   property color background: Color.menu.background
   property color foreground: Color.menu.text
   property color accent: Color.accent
-  property color scrim: Color.menu.scrim
-  property var borderSpec: Border.surfaceSpec("menu", "border", Color.menu.border, Math.max(1, Style.space(2)))
   property color line: Util.alpha(foreground, 0.28)
   property color muted: Util.alpha(foreground, 0.55)
   property color selectionFill: Util.alpha(accent, 0.18)
@@ -214,44 +211,42 @@ Item {
     onTriggered: root.now = new Date()
   }
 
-  PanelWindow {
+  // A normal toplevel window, so Hyprland treats it like any app: SUPER + Q
+  // closes it and it can be moved, resized, or tiled.
+  FloatingWindow {
     id: panel
     visible: root.opened
-    anchors { top: true; bottom: true; left: true; right: true }
-    color: "transparent"
-    WlrLayershell.namespace: "omarchy-timebox"
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
-    exclusionMode: ExclusionMode.Ignore
+    title: "Timebox Planner"
+    color: root.background
+    implicitWidth: 1280
+    implicitHeight: 800
+    minimumSize: Qt.size(900, 620)
+
+    // Closed by the compositor (SUPER + Q, the window's close button):
+    // save and tell the host so SUPER + D opens it again next time.
+    onVisibleChanged: {
+      if (visible || !root.opened) return
+      root.close()
+      if (root.shell && typeof root.shell.hide === "function")
+        root.shell.hide((root.manifest && root.manifest.id) || "hawzhin.timebox")
+    }
 
     Shortcut {
       sequences: ["Escape"]
       onActivated: root.editing ? root.cancelEdit() : root.dismiss()
     }
 
-    Rectangle { anchors.fill: parent; color: root.scrim }
-
-    MouseArea { anchors.fill: parent; onClicked: root.dismiss() }
-
-    BorderSurface {
+    Item {
       id: card
-      width: Math.min(Style.space(1180), panel.width - Style.gapsOut * 2)
-      height: Math.min(Style.space(880), panel.height - Style.gapsOut * 2)
-      radius: root.cornerRadius
-      anchors.centerIn: parent
-      color: root.background
-      borderSpec: root.borderSpec
-      padding: Style.space(28)
+      anchors.fill: parent
+      readonly property int inset: Style.space(28)
 
       MouseArea { anchors.fill: parent; onClicked: gridKeys.forceActiveFocus() }
 
       Item {
         id: content
         anchors.fill: parent
-        anchors.topMargin: card.contentTopInset
-        anchors.rightMargin: card.contentRightInset
-        anchors.bottomMargin: card.contentBottomInset
-        anchors.leftMargin: card.contentLeftInset
+        anchors.margins: card.inset
 
         readonly property int gutter: Style.space(36)
         readonly property int leftWidth: Math.round((width - gutter) * 0.42)
