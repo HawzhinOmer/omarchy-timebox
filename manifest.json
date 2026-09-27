@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "hawzhin.timebox",
   "name": "Timebox Planner",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "author": "HawzhinOmer",
   "description": "Daily timebox planner: top priorities, brain dump, half-hour schedule, and reminders when a block starts",
   "kinds": [

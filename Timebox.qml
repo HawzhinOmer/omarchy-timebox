@@ -811,7 +811,7 @@ Item {
                 wrapMode: TextEdit.Wrap
                 color: root.foreground
                 font.family: root.handFamily
-                font.pixelSize: Style.font.title * (1 + (root.handScale - 1) * 0.7)
+                font.pixelSize: Style.font.title * root.handScale * 1.25
                 selectionColor: root.selectionFill
                 selectByMouse: true
                 persistentSelection: true
@@ -872,7 +872,7 @@ Item {
                 wrapMode: TextEdit.Wrap
                 color: root.foreground
                 font.family: root.handFamily
-                font.pixelSize: Style.font.title * (1 + (root.handScale - 1) * 0.7)
+                font.pixelSize: Style.font.title * root.handScale * 1.25
                 selectionColor: root.selectionFill
                 selectByMouse: true
                 persistentSelection: true
@@ -1105,7 +1105,7 @@ Item {
                 text: modelData.text
                 color: root.tone(root.slotColors[Model.slotKey(start)])
                 font.family: root.handFamily
-                font.pixelSize: Math.min(Style.font.heading * root.handScale, grid.rowHeight * 0.72)
+                font.pixelSize: Math.min(Style.font.heading * root.handScale * 1.25, grid.rowHeight * 0.82)
                 elide: Text.ElideRight
                 z: 3
               }
@@ -1163,7 +1163,7 @@ Item {
                 verticalAlignment: TextInput.AlignVCenter
                 color: root.foreground
                 font.family: root.handFamily
-                font.pixelSize: Math.min(Style.font.heading * root.handScale, grid.rowHeight * 0.72)
+                font.pixelSize: Math.min(Style.font.heading * root.handScale * 1.25, grid.rowHeight * 0.82)
                 selectionColor: root.selectionFill
                 selectByMouse: true
                 clip: true
