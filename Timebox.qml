@@ -46,7 +46,10 @@ Item {
   // Theme
   property color background: Color.menu.background
   property color foreground: Color.menu.text
-  property color accent: Color.accent
+  // Accent color: the theme's by default, or one picked from the palette.
+  readonly property color accent: root.settings.accent ? root.settings.accent : Color.accent
+  readonly property var palette: ["", "#6aa9ff", "#4fd1c5", "#7bc86c", "#f2d16b", "#f28fad", "#b48ead", "#ef6b6b"]
+  property bool paletteOpen: false
   property color line: Util.alpha(foreground, 0.28)
   property color muted: Util.alpha(foreground, 0.55)
   property color selectionFill: Util.alpha(accent, 0.18)
@@ -151,10 +154,16 @@ Item {
     root.scheduleSave()
   }
 
-  function cycleReminders() {
-    var next = Object.assign({}, root.settings, { reminders: Model.nextReminderMode(root.reminderMode) })
+  function setSetting(key, value) {
+    var next = Object.assign({}, root.settings)
+    if (value === "" || value === undefined) delete next[key]
+    else next[key] = value
     root.settings = next
     settingsFile.setText(JSON.stringify(next, null, 2) + "\n")
+  }
+
+  function cycleReminders() {
+    root.setSetting("reminders", Model.nextReminderMode(root.reminderMode))
   }
 
   // ---- schedule interaction ----
@@ -265,7 +274,11 @@ Item {
 
     Shortcut {
       sequences: ["Escape"]
-      onActivated: root.editing ? root.cancelEdit() : root.dismiss()
+      onActivated: {
+        if (root.paletteOpen) root.paletteOpen = false
+        else if (root.editing) root.cancelEdit()
+        else root.dismiss()
+      }
     }
 
     Item {
@@ -289,6 +302,7 @@ Item {
         // ================= Header =================
         Item {
           id: topBar
+          z: 10
           anchors.left: parent.left
           anchors.right: parent.right
           anchors.top: parent.top
@@ -390,6 +404,77 @@ Item {
               anchors.bottom: parent.bottom
               anchors.bottomMargin: Style.space(4)
               spacing: Style.space(4)
+
+              Rectangle {
+                id: colorButton
+                width: Style.space(28)
+                height: Style.space(28)
+                radius: root.cornerRadius
+                color: colorMouse.containsMouse || root.paletteOpen ? Util.alpha(root.foreground, 0.1) : "transparent"
+                border.color: root.line
+                border.width: 1
+                Rectangle {
+                  anchors.centerIn: parent
+                  width: Style.space(14); height: width; radius: width / 2
+                  color: root.accent
+                }
+                MouseArea {
+                  id: colorMouse
+                  anchors.fill: parent
+                  hoverEnabled: true
+                  cursorShape: Qt.PointingHandCursor
+                  onClicked: root.paletteOpen = !root.paletteOpen
+                }
+
+                Rectangle {
+                  visible: root.paletteOpen
+                  anchors.right: parent.right
+                  anchors.top: parent.bottom
+                  anchors.topMargin: Style.space(6)
+                  width: swatches.implicitWidth + Style.space(16)
+                  height: swatches.implicitHeight + Style.space(16)
+                  radius: root.cornerRadius
+                  color: root.background
+                  border.color: root.line
+                  border.width: 1
+
+                  Row {
+                    id: swatches
+                    anchors.centerIn: parent
+                    spacing: Style.space(8)
+                    Repeater {
+                      model: root.palette
+                      Rectangle {
+                        required property var modelData
+                        readonly property color swatch: modelData ? modelData : Color.accent
+                        readonly property bool current: (root.settings.accent || "") === modelData
+                        width: Style.space(24); height: width; radius: width / 2
+                        color: swatch
+                        border.color: root.foreground
+                        border.width: current ? Math.max(2, Style.space(2)) : 0
+                        Text {
+                          anchors.centerIn: parent
+                          visible: !parent.modelData
+                          text: "T"
+                          color: root.background
+                          font.family: root.fontFamily
+                          font.pixelSize: Style.font.caption
+                          font.bold: true
+                        }
+                        MouseArea {
+                          anchors.fill: parent
+                          cursorShape: Qt.PointingHandCursor
+                          onClicked: {
+                            root.setSetting("accent", parent.modelData)
+                            root.paletteOpen = false
+                            gridKeys.forceActiveFocus()
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
 
               Rectangle {
                 width: bellText.implicitWidth + Style.space(16)
@@ -721,7 +806,8 @@ Item {
                 else if (k === Qt.Key_PageUp) root.shiftDay(-1)
                 else if (k === Qt.Key_PageDown) root.shiftDay(1)
                 else if (k === Qt.Key_Home) root.setDay(new Date())
-                else if (k === Qt.Key_Tab) root.focusPriority(0)
+                else if (k === Qt.Key_Tab) root.moveCursor(1, false)
+                else if (k === Qt.Key_Backtab) root.moveCursor(-1, false)
                 else if (k === Qt.Key_Return || k === Qt.Key_Enter || k === Qt.Key_F2)
                   root.startEdit(root.slots[root.selStart] || "")
                 else if (k === Qt.Key_Delete || k === Qt.Key_Backspace) root.fillSelection("")
@@ -912,6 +998,8 @@ Item {
                 selectByMouse: true
                 clip: true
                 Keys.onReturnPressed: root.commitEdit()
+                Keys.onTabPressed: { root.commitEdit(); root.moveCursor(1, false) }
+                Keys.onBacktabPressed: { root.commitEdit(); root.moveCursor(-1, false) }
                 Keys.onEnterPressed: root.commitEdit()
                 Keys.onEscapePressed: root.cancelEdit()
                 onActiveFocusChanged: if (!activeFocus && root.editing) root.commitEdit()
@@ -929,7 +1017,7 @@ Item {
           verticalAlignment: Text.AlignBottom
           text: root.locked
             ? "⚠  " + root.loadError + ". Read-only so it isn't overwritten; fix the file, then reopen."
-            : "Drag to select slots  •  type or Enter to fill  •  Del to clear  •  PgUp/PgDn change day  •  Home today  •  Esc close"
+            : "Drag to select slots  •  type or Enter to fill  •  Tab next slot  •  Del to clear  •  PgUp/PgDn change day  •  Home today  •  Esc close"
           color: root.locked ? root.urgentColor : root.muted
           font.family: root.fontFamily
           font.pixelSize: Style.font.bodySmall

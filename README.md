@@ -10,6 +10,8 @@ It follows your current Omarchy theme, and everything you write appears in a han
 - **Brain Dump**: free-form notes on a dotted pad.
 - **Schedule**: `:00` / `:30` slots. Consecutive slots with the same text are drawn as one boxed timebox.
 - On today's page, the current hour's number is highlighted.
+- **Colors**: the round button in the header picks the accent color used for blocks and highlights
+  (T = your Omarchy theme's color).
 - **Reminders**: a desktop notification when each block starts (e.g. `Deep work · 9:00 AM – 10:30 AM`).
   Click it to open the planner. The bell button next to the date switches between *At start*,
   *5 min before*, *5 min before + start*, and *Off*. Check the next one with `omarchy-shell hawzhin.timebox.reminders next`.
@@ -34,12 +36,12 @@ Bind the planner to a key in `~/.config/hypr/bindings.lua`:
 o.bind("SUPER + D", "Timebox planner", "omarchy-shell shell toggle hawzhin.timebox")
 ```
 
-The planner opens as a normal window (close it with Esc or SUPER + Q). To have it open floating
-and centered instead of tiled, add this to `~/.config/hypr/hyprland.lua`:
+The planner opens as a normal window (close it with Esc or SUPER + Q). To have it fill the screen
+(keeping the bar), add this to `~/.config/hypr/hyprland.lua`:
 
 ```lua
 o.window({ class = "^org.quickshell$", title = "^Timebox Planner$" },
-  { float = true, center = true, size = { 1280, 800 }, tag = "-default-opacity", opacity = "1 1" })
+  { maximize = true, tag = "-default-opacity", opacity = "1 1" })
 ```
 
 ## Remove
@@ -64,9 +66,9 @@ Omarchy with the Quickshell-based shell (Omarchy 4 / Quattro). No other dependen
 | Type or Enter | Fill the selected slots (Enter saves, Esc cancels) |
 | Del / Backspace | Clear the selected slots |
 | Arrows, Shift+arrows | Move / extend the selection |
+| Tab / Shift+Tab | Next / previous slot (saves what you're typing first) |
 | PgUp / PgDn | Previous / next day |
 | Home | Jump to today |
-| Tab | Jump to priorities, then brain dump |
 | Esc | Close |
 
 ## Bar widget settings
