@@ -1352,6 +1352,7 @@ Item {
         Text {
           anchors.right: parent.right
           anchors.bottom: parent.bottom
+          visible: !root.exporting
           text: "Created by HawzhinOmer"
           color: root.muted
           opacity: 0.7
