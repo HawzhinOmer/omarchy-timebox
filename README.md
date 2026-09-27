@@ -22,16 +22,9 @@ It follows your current Omarchy theme, and everything you write appears in a han
 - **Bar widget**: shows the block you're in and how long is left (`Deep work · 56m`),
   or the next block when nothing is scheduled right now. Hover for details; click to open the planner.
 
-## Use it on the web
+## Web and Android
 
-No Omarchy? Use the web version: **https://hawzhinomer.github.io/timebox/**
-It has the same features, with Gruvbox Dark Soft and Gruvbox Light Soft themes (☀/☾ button;
-it follows your system by default). It works on phones too. Plans are saved in that browser,
-and reminders fire while the page is open.
-
-**Android app:** download [timebox.apk](https://hawzhinomer.github.io/timebox/timebox.apk) and open it
-to install (allow installing from your browser when Android asks). Or open the website in Chrome and
-tap ⋮ → **Install app**. Either way it gets its own icon, opens full screen, and works offline.
+Timebox is also available as a web and Android app: https://timebox.timebox-app.workers.dev
 
 ## Install
 
@@ -108,8 +101,7 @@ rather than overwriting it.
 ## License
 
 MIT. The bundled handwriting font, [Caveat](https://github.com/googlefonts/caveat), is licensed
-under the SIL Open Font License 1.1 (see `fonts/OFL.txt`). The web version also bundles
-[Amiri](https://github.com/aliftype/amiri) for Kurdish and Arabic text (SIL OFL 1.1, `docs/fonts/OFL-Amiri.txt`).
+under the SIL Open Font License 1.1 (see `fonts/OFL.txt`).
 
 ---
 
