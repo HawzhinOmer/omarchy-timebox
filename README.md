@@ -1,4 +1,4 @@
-# Timebox Planner for Omarchy
+# Timebox
 
 A daily timebox planner for the [Omarchy](https://omarchy.org) shell, modeled on the paper
 "Daily Timebox Planner": top priorities, a brain dump, and a half-hour schedule from 7 AM to midnight.
@@ -24,7 +24,7 @@ It follows your current Omarchy theme, and everything you write appears in a han
 
 ## Use it on the web
 
-No Omarchy? Use the web version: **https://hawzhinomer.github.io/omarchy-timebox/**
+No Omarchy? Use the web version: **https://hawzhinomer.github.io/timebox/**
 It has the same features, with Gruvbox Dark Soft and Gruvbox Light Soft themes (☀/☾ button;
 it follows your system by default). It works on phones too. Plans are saved in that browser,
 and reminders fire while the page is open.
@@ -32,7 +32,7 @@ and reminders fire while the page is open.
 ## Install
 
 ```bash
-omarchy plugin add https://github.com/HawzhinOmer/omarchy-timebox.git --enable
+omarchy plugin add https://github.com/HawzhinOmer/timebox.git --enable
 ```
 
 `--enable` puts the bar widget in the center section. Move it with, for example:
