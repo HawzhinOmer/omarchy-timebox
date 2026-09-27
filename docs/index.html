@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Timebox has moved</title>
+  <style>
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #32302f; color: #ebdbb2; font-family: ui-monospace, monospace; }
+    a { color: #fe8019; }
+  </style>
+</head>
+<body>
+  <p>Timebox has moved to <a href="https://timebox.timebox-app.workers.dev/">timebox.timebox-app.workers.dev</a></p>
+  <script>
+    // Carry saved plans to the new address (in the URL fragment, which is never
+    // sent to a server), drop the old offline copy, then go there.
+    (async () => {
+      const data = {};
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("timebox:")) data[k] = localStorage.getItem(k);
+        }
+      } catch (e) { /* storage blocked */ }
+      try {
+        const regs = navigator.serviceWorker ? await navigator.serviceWorker.getRegistrations() : [];
+        for (const r of regs) await r.unregister();
+        if (window.caches) for (const k of await caches.keys()) await caches.delete(k);
+      } catch (e) { /* nothing to clean */ }
+      let url = "https://timebox.timebox-app.workers.dev/";
+      if (Object.keys(data).length) url += "#import=" + btoa(unescape(encodeURIComponent(JSON.stringify(data))));
+      location.replace(url);
+    })();
+  </script>
+</body>
+</html>
