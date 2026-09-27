@@ -14,7 +14,7 @@ BarWidget {
 
   readonly property string dataDir: Quickshell.env("HOME") + "/.local/share/omarchy-timebox"
   readonly property int maxLength: Number(setting("maxLength", 28)) || 28
-  readonly property bool showNext: setting("showNext", true) !== false
+  readonly property bool showNext: String(setting("showNext", true)) !== "false"
   readonly property string icon: "󰃰"
 
   property date now: clock.date
