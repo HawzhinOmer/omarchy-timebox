@@ -29,6 +29,9 @@ It has the same features, with Gruvbox Dark Soft and Gruvbox Light Soft themes (
 it follows your system by default). It works on phones too. Plans are saved in that browser,
 and reminders fire while the page is open.
 
+**Android app:** open the website in Chrome, tap ⋮ → **Install app** (or "Add to Home screen").
+It gets its own icon, opens full screen, and works offline.
+
 ## Install
 
 ```bash
